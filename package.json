@@ -2,7 +2,7 @@
   "name": "ccreator",
   "displayName": "CCreator",
   "description": "Расширение для генерации компоненты согласно структуры",
-  "version": "0.0.2",
+  "version": "0.0.1",
   "engines": {
     "vscode": "^1.125.0"
   },

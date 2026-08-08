@@ -31,13 +31,15 @@ jobs:
         run: npm run compile
 
       - name: Package VSIX
-        run: npx @vscode/vsce package
+        run: |
+          npx @vscode/vsce package
+          mv $(ls *.vsix | head -1) ccreator.vsix
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          files: ccreator-${{ github.ref_name }}.vsix'
+          files: ccreator.vsix
           generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -38,5 +38,7 @@ jobs:
         with:
           files: '*.vsix'
           generate_release_notes: true
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

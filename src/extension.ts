@@ -141,29 +141,40 @@ export function activate(context: vscode.ExtensionContext) {
 
         let folderPath = '';
         let select = true;
+        const CREATE_NEW_FOLDER = "CREATE NEW FOLDER";
+
+        const createNewFolder = async () => {
+            return await vscode.window.showInputBox({
+                prompt: 'Введите имя папки',
+            });
+        };
+
         while (select) {
             let selectedFolder = null;
 		    const folders = await getSubdirectories(folderPath.length ? path.join(rootPath, folderPath) : rootPath );
 
             if (!folders.length) {
                 select = false;
-                selectedFolder = await vscode.window.showInputBox({
-                    prompt: 'Введите имя папки',
-                })
+                selectedFolder = await createNewFolder();
             }
             else {
                 selectedFolder = await vscode.window.showQuickPick(
-                    folders,
+                    [CREATE_NEW_FOLDER, ...folders],
                     {
-                        placeHolder: 'Выберите папку, в которой необходимо создать компоненту или оставьте пустым, для текущей папки',
+                        placeHolder: 'Выберите папку, в которой необходимо создать компоненту',
                         canPickMany: false,
                         ignoreFocusOut: true
                     }
-                )
+                );
+                vscode.window.showInformationMessage(`${selectedFolder}`);
             }
 
-            if (!selectedFolder) select = false;
-            else folderPath = path.join(folderPath, selectedFolder);
+            if (selectedFolder === CREATE_NEW_FOLDER) {
+                select = false;
+                selectedFolder = await createNewFolder();
+                folderPath = path.join(folderPath, selectedFolder as string);
+            }
+            else folderPath = path.join(folderPath, selectedFolder as string);
         }
 
         const format = await vscode.window.showQuickPick(

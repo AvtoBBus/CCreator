@@ -45,9 +45,9 @@
 Создаст папку `src` с двумя файлами: `index.js` и `style.css`.
 
 ```
-<components|Header:state.svelte.ts>:<utils|helpers.js>
+<components|Header.svelte:Footer.svelte>:<utils|helpers.js>
 ```
-Создаст папку `components` с файлом Header и выбранным расширением, а также файл state.svelte.ts и папку `utils` с файлом `helpers.js`.
+Создаст папку `components` с двумя Svelte-файлами и папку `utils` с файлом `helpers.js`.
 
 ```
 <project|<src|main.js>:<tests|test.js>>
@@ -72,5 +72,34 @@
 6. Нажмите `Enter` – структура будет создана!
 
 ---
+
+## 📦 Установка
+
+### Через VSIX-файл (рекомендовано для команды)
+
+1. Скачайте файл `ccreator-*.vsix`.
+2. В VSCode откройте панель расширений (`Ctrl+Shift+X`).
+3. Нажмите на три точки (···) в правом верхнем углу → `Install from VSIX...`.
+4. Выберите скачанный файл.
+
+---
+
+## 🛠 Разработка и сборка
+
+Если вы хотите доработать расширение:
+
+```bash
+git clone <ваш-репозиторий>
+cd ccreator-svelte
+npm install
+npm run watch   # компиляция в режиме наблюдения
+```
+
+Для создания `.vsix`-пакета:
+
+```bash
+npm install -g @vscode/vsce
+vsce package
+```
 
 **Наслаждайтесь быстрым созданием структуры!** 🚀

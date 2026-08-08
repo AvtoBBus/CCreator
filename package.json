@@ -10,6 +10,7 @@
     "Other"
   ],
   "publisher": "AvtoBBus",
+  "repository": "https://github.com/AvtoBBus/CCreator.git",
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [

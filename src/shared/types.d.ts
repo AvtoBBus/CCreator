@@ -9,6 +9,7 @@ export type Template = (fileName: string) => string;
 export interface FileNode {
     type: 'file';
     name: string;
+    noTemplate: boolean
 }
 
 export interface FolderNode {

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ComponentInfoType, Frameworks, Node, ReactComponentType, Scripts, Styles, Template } from './shared/types';
+import { ComponentInfoType, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template } from './shared/types';
 import { templates } from './templates';
 import { checkForUpdates } from './autoUpdate';
 
@@ -27,10 +27,8 @@ export function parseStructure(input: string): Node[] {
 
         while (i < str.length && str[i] !== stopChar) {
             if (str[i] === '<') {
-                // === ПАРСИМ ПАПКУ ===
-                i++; // пропускаем '<'
+                i++;
 
-                // 1. Имя папки до '|'
                 let name = '';
                 while (i < str.length && str[i] !== '|') {
                     name += str[i];
@@ -39,22 +37,62 @@ export function parseStructure(input: string): Node[] {
                 if (i >= str.length || str[i] !== '|') {
                     throw new Error(`Expected '|' after folder name at position ${i}`);
                 }
-                i++; // пропускаем '|'
+                i++;
 
-                // 2. Содержимое папки до '>'
                 const children = parseElements('>');
                 if (i >= str.length || str[i] !== '>') {
                     throw new Error(`Expected '>' at position ${i}`);
                 }
-                i++; // пропускаем '>'
+                i++;
 
                 result.push({
                     type: 'folder',
                     name: name.trim(),
                     children,
+                } as FolderNode);
+            } 
+            else if (str[i] === '[') {
+                i++;
+
+                let files: FileNode[] = [];
+                while (str[i] !== ']') {
+                    let name = '';
+                    
+                    while (i < str.length && str[i] !== ',' && str[i] !== ']') {
+                        name += str[i];
+                        i++;
+                    }
+
+                    if (str[i] !== ']') {
+                        i++;
+                    }
+                    
+                    const checkNoTemplate = name.startsWith('!');
+                    files.push({
+                        type: 'file',
+                        name: checkNoTemplate ? name.trim().slice(1) : name.trim(),
+                        noTemplate: checkNoTemplate
+                    } as FileNode);
+                }
+
+                i++;
+
+                let ext = '';
+                while (i < str.length && str[i] !== ':' && str[i] !== stopChar) {
+                    ext += str[i];
+                    i++;
+                }
+
+                files.forEach(file => {
+                    result.push({
+                        type: 'file',
+                        noTemplate: file.noTemplate,
+                        name: file.name + ext.trim()
+                    });
                 });
-            } else {
-                // === ПАРСИМ ИМЯ ФАЙЛА ===
+
+            }
+            else {
                 let name = '';
                 while (i < str.length && str[i] !== ':' && str[i] !== stopChar) {
                     name += str[i];
@@ -63,17 +101,17 @@ export function parseStructure(input: string): Node[] {
                 if (name.trim() === '') {
                     throw new Error(`Empty file name at position ${i}`);
                 }
+                const checkNoTemplate = name.startsWith('!');
                 result.push({
                     type: 'file',
-                    name: name.trim(),
-                });
+                    name: checkNoTemplate ? name.trim().slice(1) : name.trim(),
+                    noTemplate: checkNoTemplate
+                } as FileNode);
             }
 
-            // Если следующий символ ':' и мы не на stopChar, пропускаем разделитель
             if (i < str.length && str[i] === ':' && str[i] !== stopChar) {
-                i++; // пропускаем ':'
+                i++;
             } else if (i < str.length && str[i] === stopChar) {
-                // остановка, не поглощаем stopChar – его обработает вызвавший код
                 break;
             }
         }
@@ -91,11 +129,8 @@ export function parseStructure(input: string): Node[] {
 
 async function getSubdirectories(dirPath: string): Promise<string[]> {
   try {
-    // Читаем содержимое директории с опцией { withFileTypes: true }
-    // чтобы получить объекты Dirent, у которых есть метод isDirectory()
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
     
-    // Фильтруем только папки и возвращаем их имена
     return entries
       .filter(entry => entry.isDirectory())
       .map(entry => entry.name);
@@ -145,13 +180,13 @@ async function createFromTree(rootPath: string, nodes: Node[], infoAboutComponen
         const fullPath = path.join(rootPath, node.name);
         if (node.type === 'folder') {
             await fs.mkdir(fullPath, { recursive: true });
-            await createFromTree(fullPath, node.children, infoAboutComponent);
+            await createFromTree(fullPath, (node as FolderNode).children, infoAboutComponent);
         } else {
             const hasExtension = path.extname(fullPath) !== '';
             const filePath = hasExtension ? fullPath : `${fullPath}${getFileFormat(infoAboutComponent)}`;
             await fs.mkdir(path.dirname(filePath), { recursive: true });
-            const templateFunction = getGenerateTemplateFunction(infoAboutComponent);
-            const checkFormatTemplate = checkFormatAndGetTeplateFunction(path.extname(fullPath));
+            const templateFunction = node.noTemplate ? undefined : getGenerateTemplateFunction(infoAboutComponent);
+            const checkFormatTemplate = node.noTemplate ? undefined : checkFormatAndGetTeplateFunction(path.extname(fullPath));
             const content = !hasExtension ? (templateFunction ? templateFunction(node.name) : '') : (checkFormatTemplate ? checkFormatTemplate(node.name) : '');
             await fs.writeFile(filePath, content, 'utf8');
         }

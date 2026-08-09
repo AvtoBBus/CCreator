@@ -117,6 +117,14 @@ function getGenerateTemplateFunction(infoAboutComponent: ComponentInfoType): Tem
     return undefined;
 };
 
+function checkFormatAndGetTeplateFunction(format: string): Template | undefined {
+    if (format === '.svelte') { return getGenerateTemplateFunction({ framework: 'svelte', script: 'ts', style: 'scss'}); };
+    if (format === '.vue') { return getGenerateTemplateFunction({ framework: 'vue', script: 'ts', style: 'scss'}); };
+    if (format === '.react') { return getGenerateTemplateFunction({ framework: 'react', script: 'ts', style: 'scss', componentType: 'function' }); };
+    if (format === '.component.ts') { return getGenerateTemplateFunction({ framework: 'angular', script: 'ts', style: 'scss'}); };
+    return undefined;
+}
+
 function getFileFormat(infoAboutComponent: ComponentInfoType): string {
     switch (infoAboutComponent.framework) {
         case 'svelte':
@@ -141,7 +149,9 @@ async function createFromTree(rootPath: string, nodes: Node[], infoAboutComponen
             const hasExtension = path.extname(fullPath) !== '';
             const filePath = hasExtension ? fullPath : `${fullPath}${getFileFormat(infoAboutComponent)}`;
             await fs.mkdir(path.dirname(filePath), { recursive: true });
-            const content = getGenerateTemplateFunction(infoAboutComponent)!(node.name);
+            const templateFunction = getGenerateTemplateFunction(infoAboutComponent);
+            const checkFormatTemplate = checkFormatAndGetTeplateFunction(path.extname(fullPath));
+            const content = !hasExtension ? (templateFunction ? templateFunction(node.name) : '') : (checkFormatTemplate ? checkFormatTemplate(node.name) : '');
             await fs.writeFile(filePath, content, 'utf8');
         }
     }

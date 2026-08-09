@@ -2,7 +2,7 @@
 
 **Генератор структуры файлов и папок по текстовому описанию** для Visual Studio Code.
 
-![версия](https://img.shields.io/badge/version-1.0.2-blue)
+![версия](https://img.shields.io/badge/version-1.0.3-blue)
 
 ---
 

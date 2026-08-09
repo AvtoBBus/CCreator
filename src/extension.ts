@@ -3,6 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { ComponentInfoType, Frameworks, Node, ReactComponentType, Scripts, Styles, Template } from './shared/types';
 import { templates } from './templates';
+import { checkForUpdates } from './autoUpdate';
 
 /**
  * Парсит строку с описанием структуры папок и файлов.
@@ -206,6 +207,9 @@ function showError(text: string) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+
+    checkForUpdates(context);
+
 	const disposable = vscode.commands.registerCommand('ccreator.createStructure', async () => {
 		const workspaceFolders = vscode.workspace.workspaceFolders;
 		if (!workspaceFolders) {
@@ -254,7 +258,13 @@ export function activate(context: vscode.ExtensionContext) {
                 selectedFolder = await createNewFolder();
                 folderPath = path.join(folderPath, selectedFolder as string);
             }
-            else { folderPath = path.join(folderPath, selectedFolder as string); }
+            else {
+                if (!selectedFolder) {
+                    showError('Необходимо выбрать папку');
+                    return;
+                }
+                folderPath = path.join(folderPath, selectedFolder as string);
+            }
         }
 
         infoAboutComponent.framework = await getFramework();

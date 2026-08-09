@@ -24,7 +24,7 @@ export type Node = FileNode | FolderNode;
  */
 export function parseStructure(input: string): Node[] {
     const str = input.trim();
-    if (str === '') return [];
+    if (str === '') { return []; }
 
     let i = 0;
 
@@ -174,7 +174,7 @@ export function activate(context: vscode.ExtensionContext) {
                 selectedFolder = await createNewFolder();
                 folderPath = path.join(folderPath, selectedFolder as string);
             }
-            else folderPath = path.join(folderPath, selectedFolder as string);
+            else { folderPath = path.join(folderPath, selectedFolder as string); }
         }
 
         const format = await vscode.window.showQuickPick(
@@ -184,11 +184,11 @@ export function activate(context: vscode.ExtensionContext) {
                 canPickMany: false,
                 ignoreFocusOut: true
             }
-        )
+        );
 
         if (!format) {
 			vscode.window.showErrorMessage('Необходимо выбрать расширение основных файлов');
-            return
+            return;
         }
 
 		const structureString = await vscode.window.showInputBox({

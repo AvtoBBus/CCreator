@@ -1,20 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-
-// Типы для результата парсинга
-export interface FileNode {
-    type: 'file';
-    name: string;
-}
-
-export interface FolderNode {
-    type: 'folder';
-    name: string;
-    children: Node[];
-}
-
-export type Node = FileNode | FolderNode;
+import { ComponentInfoType, Frameworks, Node, ReactComponentType, Scripts, Styles, Template } from './shared/types';
+import { templates } from './templates';
 
 /**
  * Парсит строку с описанием структуры папок и файлов.
@@ -116,32 +104,115 @@ async function getSubdirectories(dirPath: string): Promise<string[]> {
   }
 }
 
-async function createFromTree(rootPath: string, nodes: Node[], format: string): Promise<void> {
+function getGenerateTemplateFunction(infoAboutComponent: ComponentInfoType): Template | undefined {
+    switch (infoAboutComponent.framework) {
+        case 'svelte':
+        case 'vue':
+            return templates[`${infoAboutComponent.framework}-${infoAboutComponent.script}-${infoAboutComponent.style}`];
+        case 'react':
+            return templates[`${infoAboutComponent.framework}-${infoAboutComponent.componentType}`];
+        case 'angular':
+            return templates['angular'];
+    };
+    return undefined;
+};
+
+function getFileFormat(infoAboutComponent: ComponentInfoType): string {
+    switch (infoAboutComponent.framework) {
+        case 'svelte':
+            return '.svelte';
+        case 'vue':
+            return '.vue';
+        case 'react':
+            return '.' + infoAboutComponent.script + 'x';
+        case 'angular':
+            return '.component.ts';
+    };
+    return '';
+}
+
+async function createFromTree(rootPath: string, nodes: Node[], infoAboutComponent: ComponentInfoType): Promise<void> {
     for (const node of nodes) {
         const fullPath = path.join(rootPath, node.name);
         if (node.type === 'folder') {
             await fs.mkdir(fullPath, { recursive: true });
-            await createFromTree(fullPath, node.children, format);
+            await createFromTree(fullPath, node.children, infoAboutComponent);
         } else {
             const hasExtension = path.extname(fullPath) !== '';
-            await fs.writeFile(!hasExtension ? `${fullPath}.${format}` :  fullPath, '', 'utf8');
+            const filePath = hasExtension ? fullPath : `${fullPath}${getFileFormat(infoAboutComponent)}`;
+            await fs.mkdir(path.dirname(filePath), { recursive: true });
+            const content = getGenerateTemplateFunction(infoAboutComponent)!(node.name);
+            await fs.writeFile(filePath, content, 'utf8');
         }
     }
+}
+
+async function getFramework(): Promise<Frameworks | undefined> {  
+    return await vscode.window.showQuickPick(
+        ['svelte', 'react', 'vue', 'angular'],
+        {
+            placeHolder: 'Выберите фрейморк',
+            canPickMany: false,
+            ignoreFocusOut: true
+        }
+    ) as Frameworks | undefined;
+}
+
+async function getScript(): Promise<Scripts | undefined> {  
+    return await vscode.window.showQuickPick(
+        ['ts', 'js'] as Scripts[],
+        {
+            placeHolder: 'Выберите язык скрипта (ts - по умолчанию)',
+            canPickMany: false,
+            ignoreFocusOut: true
+        }
+    ) as Scripts | undefined;
+}
+
+async function getStyles(): Promise<Styles | undefined> {  
+    return await vscode.window.showQuickPick(
+        ['scss', 'less', 'css'],
+        {
+            placeHolder: 'Выберите язык стилей (scss - по умолчанию)',
+            canPickMany: false,
+            ignoreFocusOut: true
+        }
+    ) as Styles | undefined;
+}
+
+async function getComponentType(): Promise<ReactComponentType | undefined> {  
+    return await vscode.window.showQuickPick(
+        ['class', 'function'],
+        {
+            placeHolder: 'Выберите тип React-компоненты (function - по умолчанию)',
+            canPickMany: false,
+            ignoreFocusOut: true
+        }
+    ) as ReactComponentType | undefined;
+}
+
+function showError(text: string) {
+    vscode.window.showErrorMessage(text);
 }
 
 export function activate(context: vscode.ExtensionContext) {
 	const disposable = vscode.commands.registerCommand('ccreator.createStructure', async () => {
 		const workspaceFolders = vscode.workspace.workspaceFolders;
 		if (!workspaceFolders) {
-			vscode.window.showErrorMessage('Откройте папку проекта');
+			showError('Откройте папку проекта');
 			return;
 		}
 		const rootPath = workspaceFolders[0].uri.fsPath;
-
-
+        
         let folderPath = '';
         let select = true;
-        const CREATE_NEW_FOLDER = "CREATE NEW FOLDER";
+        const CREATE_NEW_FOLDER = "=== CREATE NEW FOLDER ===";
+
+        const infoAboutComponent: ComponentInfoType = {
+            framework: undefined,
+            script: undefined,
+            style: undefined
+        };
 
         const createNewFolder = async () => {
             return await vscode.window.showInputBox({
@@ -166,7 +237,6 @@ export function activate(context: vscode.ExtensionContext) {
                         ignoreFocusOut: true
                     }
                 );
-                vscode.window.showInformationMessage(`${selectedFolder}`);
             }
 
             if (selectedFolder === CREATE_NEW_FOLDER) {
@@ -177,18 +247,25 @@ export function activate(context: vscode.ExtensionContext) {
             else { folderPath = path.join(folderPath, selectedFolder as string); }
         }
 
-        const format = await vscode.window.showQuickPick(
-            ['svelte', 'tsx', 'jsx'],
-            {
-                placeHolder: 'Выберите расширение для основных файлов',
-                canPickMany: false,
-                ignoreFocusOut: true
-            }
-        );
+        infoAboutComponent.framework = await getFramework();
 
-        if (!format) {
-			vscode.window.showErrorMessage('Необходимо выбрать расширение основных файлов');
+        if (!infoAboutComponent.framework) {
+            showError('Необходимо выбрать фреймворк');
             return;
+        }
+
+        switch (infoAboutComponent.framework) {
+            case 'svelte':
+            case 'vue':
+                infoAboutComponent.script = await getScript() ?? 'ts';
+                infoAboutComponent.style = await getStyles() ?? 'scss';
+                break;
+            case 'react':
+                infoAboutComponent.componentType = await getComponentType() ?? 'function';
+                infoAboutComponent.script = await getScript() ?? 'ts';
+                break;
+            case 'angular':
+                break;
         }
 
 		const structureString = await vscode.window.showInputBox({
@@ -197,15 +274,16 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 
 		if (!structureString) {
-			vscode.window.showErrorMessage('Необходимо ввести строку');
+			showError('Необходимо ввести структуру');
 			return;
 		}
 
 		try {
     		const tree = parseStructure(structureString);
-			await createFromTree(path.join(rootPath, folderPath), tree, format);
+			await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
 		} catch (err) {
-   			vscode.window.showErrorMessage('Ошибка парсинга:' + (err as Record<string, unknown>).message);
+   			showError('Ошибка парсинга:' + (err as Record<string, unknown>).message);
+            return;
 		}
 	});
 

@@ -3,7 +3,7 @@
   "displayName": "CCreator",
   "description": "Расширение для генерации компоненты согласно структуры",
   "version": "1.0.0",
-  "icon": "./icon.png",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.125.0"
   },

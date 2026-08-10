@@ -9,6 +9,7 @@ export type Template = (fileName: string) => string;
 export interface FileNode {
     type: 'file';
     name: string;
+    noTemplate: boolean
 }
 
 export interface FolderNode {
@@ -29,4 +30,15 @@ export type ComponentInfoType = {
     script: Scripts | undefined,
     style: Styles | undefined,
     componentType?: ReactComponentType
+}
+
+export type ContextItem = {
+    componentInfo: ComponentInfoType,
+    structureString: string
+}
+
+export type UserTemplate = {
+    templateName: string,
+    structureString: string,
+    fileContent: Record<string, string>
 }

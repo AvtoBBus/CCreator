@@ -31,3 +31,8 @@ export type ComponentInfoType = {
     style: Styles | undefined,
     componentType?: ReactComponentType
 }
+
+export type ContextItem = {
+    componentInfo: ComponentInfoType,
+    structureString: string
+}

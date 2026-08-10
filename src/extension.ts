@@ -1,9 +1,14 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ComponentInfoType, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template } from './shared/types';
+import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template } from './shared/types';
 import { templates } from './templates';
 import { checkForUpdates } from './autoUpdate';
+import { readState, writeState } from './shared/context';
+import { getHistoryString } from './shared/utils';
+
+const CREATE_NEW_FOLDER = "=== CREATE NEW FOLDER ===";
+const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
 
 /**
  * Парсит строку с описанием структуры папок и файлов.
@@ -237,6 +242,22 @@ async function getComponentType(): Promise<ReactComponentType | undefined> {
     ) as ReactComponentType | undefined;
 }
 
+async function selectFromHistory(history: ContextItem[]): Promise<string | undefined> {
+    return await vscode.window.showQuickPick(
+        [
+            CREATE_NEW_TEMPLATE,
+            ...history.map((item, index) => {
+                return `${index + 1}: ${getHistoryString(item.componentInfo)} - ${item.structureString}`;
+            })
+        ],
+        {
+            placeHolder: 'Выберите элемент из истории или создайте новый',
+            canPickMany: false,
+            ignoreFocusOut: true
+        }
+    ) as string | undefined;
+};
+
 function showError(text: string) {
     vscode.window.showErrorMessage(text);
 }
@@ -255,7 +276,6 @@ export function activate(context: vscode.ExtensionContext) {
         
         let folderPath = '';
         let select = true;
-        const CREATE_NEW_FOLDER = "=== CREATE NEW FOLDER ===";
 
         const infoAboutComponent: ComponentInfoType = {
             framework: undefined,
@@ -302,6 +322,32 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
 
+        const history = readState(context);
+
+        if (history.length) {
+            const selectedFromHistory: string = await selectFromHistory(history) ?? CREATE_NEW_TEMPLATE;
+
+            if (selectedFromHistory !== CREATE_NEW_TEMPLATE) {
+                let index = Number.parseInt(selectedFromHistory.split(": ")[0]);
+                if (index) {
+                    index--;
+                    infoAboutComponent.framework = history[index].componentInfo.framework;
+                    infoAboutComponent.script = history[index].componentInfo.script;
+                    infoAboutComponent.style = history[index].componentInfo.style;
+                    infoAboutComponent.componentType = history[index].componentInfo.componentType;
+                    try {
+                        const tree = parseStructure(history[index].structureString);
+                        await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
+                    } catch (error) {
+                        showError('Ошибка парсинга:' + (error as Record<string, unknown>).message);
+                        return;
+                    } finally {
+                        return;
+                    }
+                };
+            };
+        };
+
         infoAboutComponent.framework = await getFramework();
 
         if (!infoAboutComponent.framework) {
@@ -336,6 +382,7 @@ export function activate(context: vscode.ExtensionContext) {
 		try {
     		const tree = parseStructure(structureString);
 			await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
+            writeState(context, { componentInfo: infoAboutComponent, structureString });
 		} catch (err) {
    			showError('Ошибка парсинга:' + (err as Record<string, unknown>).message);
             return;

@@ -18,9 +18,63 @@
       {
         "command": "ccreator.createStructure",
         "title": "Создать структуру файлов и папок для компоненты"
+      },
+      {
+        "command": "ccreator.editUserTemplates",
+        "title": "Редактировать пользовательские шаблоны"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "CCreator",
+      "properties": {
+        "ccreator.historyLength": {
+          "type":"number",
+          "default": 5,
+          "description": "Количество элементов сохраняемых в истории (default = 5)"
+        },
+        "ccreator.userTemplates": {
+          "type": "array",
+          "default": [
+            {
+              "templateName": "default",
+              "structureString": "Comp.svelte:Comp.vue:Comp.tsx:Comp.jsx:Comp.component.ts",
+              "fileContent": {
+                "*.svelte": "<script lang='ts'>\n</script>\n\n<div></div>\n\n<style lang='scss'>\n</style>",
+                "*.vue": "<template>\n<div>\n\n</div>\n</template>\n<script setup lang='ts'>\nimport { ref } from 'vue'\n\ndefineProps({ })\n</script>\n\n<style scoped lang='scss'}>\n.my-component {\npadding: 20px;\n}\n</style>",
+                "*.tsx": "import React from 'react';\n\nconst Comp = () => {\nreturn <>\n</>\n};\n\nexport default Comp",
+                "*.jsx": "import React from 'react';\n\nconst Comp = () => {\nreturn <>\n</>\n};\n\nexport default Comp",
+                "*.component.ts": "import { Component, Input } from '@angular/core';\n\n@Component({\nselector: 'Comp',\nstandalone: true,\nimports: [],\ntemplate: '<div class='Comp'></div>',\nstyles: []\n})\nexport class Comp {}"
+              }
+            }
+          ],
+          "items": {
+            "type": "object",
+            "required": ["templateName", "structureString", "fileContent"],
+            "properties": {
+              "templateName": {
+                "type": "string",
+                "description": "Уникальное имя пресета (например, 'Svelte Component' или 'React Module')."
+              },
+              "structureString": {
+                "type": "string",
+                "default": "Comp.svelte:Comp.vue:Comp.tsx:Comp.jsx:Comp.component.ts",
+                "description": "Строка структуры папок."
+              },
+              "fileContent": {
+                "type": "object",
+                "description": "Словарь файлов. Ключ — маска расширения (например, '*.svelte') или точное имя файла (например, 'index.ts'). Значение — контент файла.",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "description": "Укажите набор своих шаблонов, для более быстрой генерации структуры"
+        }
+      }
+    }
   },
+  
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && node esbuild.js",

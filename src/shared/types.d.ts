@@ -36,3 +36,9 @@ export type ContextItem = {
     componentInfo: ComponentInfoType,
     structureString: string
 }
+
+export type UserTemplate = {
+    templateName: string,
+    structureString: string,
+    fileContent: Record<string, string>
+}

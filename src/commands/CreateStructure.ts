@@ -385,7 +385,8 @@ export async function createStructure(context: vscode.ExtensionContext) {
             let index = Number.parseInt(selectedFromHistory.split(": ")[0]);
             if (index) {
                 index--;
-                if (index <= userTemplates.length) {
+                    vscode.window.showInformationMessage(index.toString());
+                if (index <= userTemplates.length - 1) {
                     try {
                         const tree = parseStructure(userTemplates[index].structureString);
                         await createFromTreeByTemplate(path.join(rootPath, folderPath), tree, userTemplates[index].fileContent);

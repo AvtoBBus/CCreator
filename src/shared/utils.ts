@@ -6,7 +6,7 @@ export function upperFirstLetter(str: string): string {
 };
 
 export function getHistoryString(infoAboutComponent: ComponentInfoType): string {
-    const resultBase = `${infoAboutComponent.framework} (`
+    const resultBase = `${infoAboutComponent.framework} (`;
     if (infoAboutComponent.framework === 'react') { return `${resultBase}${infoAboutComponent.componentType} + ${infoAboutComponent.script})`; };
     if (infoAboutComponent.framework === 'angular') { return `${infoAboutComponent.framework}`; };
 
@@ -19,8 +19,8 @@ export function getConfigurationParam(paramKey: 'historyLength' | 'userTemplates
 
     if (paramKey === 'historyLength') { return (paramValue ?? 5) as number; };
     if (paramKey === 'userTemplates') { return (paramValue ?? []) as UserTemplate[]; };
-}
+};
 
 export function showError(text: string) {
     vscode.window.showErrorMessage(text);
-}
+};

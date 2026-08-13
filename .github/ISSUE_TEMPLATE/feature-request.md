@@ -1,8 +1,8 @@
 ---
 name: Feature request
 about: Добавление нового функционала
-title: ''
-labels: ''
+title: "[FEATURE]"
+labels: enhancement
 assignees: ''
 
 ---

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { readState, writeState } from '../shared/context';
-import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserTemplate } from '../shared/types';
+import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserSnippets, UserTemplate } from '../shared/types';
 import { templates } from '../templates';
 import { getConfigurationParam, getHistoryString, showError } from '../shared/utils';
 
@@ -16,8 +16,25 @@ const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
  * @throws Error при синтаксической ошибке.
  */
 export function parseStructure(input: string): Node[] {
-    const str = input.trim();
+    let str = input.trim();
     if (str === '') { return []; }
+
+    const snippets = (getConfigurationParam('snippets') ?? []) as UserSnippets[];
+
+    if (snippets.length) {
+        const results: Record<string, string | number | boolean> = {};
+        snippets.forEach(snippet => {
+            if (str.includes(`{${snippet.snippetName}}`)) {
+                try {
+                    results[snippet.snippetName] = eval(snippet.value)();
+                } catch (error) { }
+            };
+        });
+
+        Object.keys(results).forEach(key => {
+            str = str.replaceAll(`{${key}}`, results[key].toString());
+        });
+    }
 
     let i = 0;
 
@@ -152,7 +169,17 @@ function getGenerateTemplateFunction(infoAboutComponent: ComponentInfoType): Tem
         case 'react':
             return templates[`${infoAboutComponent.framework}-${infoAboutComponent.componentType}`];
         case 'angular':
-            return templates['angular'];
+        case 'actix':
+        case 'django':
+        case 'electron':
+        case 'express':
+        case 'fast-api':
+        case 'flutter':
+        case 'laravel':
+        case 'nest-js':
+        case 'next-js':
+        case 'spring-boot':
+            return templates[infoAboutComponent.framework];
     };
     return undefined;
 };
@@ -175,6 +202,24 @@ function getFileFormat(infoAboutComponent: ComponentInfoType): string {
             return '.' + infoAboutComponent.script + 'x';
         case 'angular':
             return '.component.ts';
+        case 'next-js':
+            return '.tsx';
+        case 'electron':
+        case 'express':
+            return '.js';
+        case 'nest-js':
+            return '.ts';
+        case 'fast-api':
+        case 'django':
+            return '.py';
+        case 'spring-boot':
+            return '.java';
+        case 'laravel':
+            return '.php';
+        case 'flutter':
+            return '.dart';
+        case 'actix':
+            return '.rs';        
     };
     return '';
 }
@@ -255,7 +300,22 @@ async function createFromTreeByTemplate(rootPath: string, nodes: Node[], filesIn
 
 async function getFramework(): Promise<Frameworks | undefined> {  
     return await vscode.window.showQuickPick(
-        ['svelte', 'react', 'vue', 'angular'],
+        [
+            'svelte',
+            'react',
+            'vue',
+            'angular',
+            'next-js',
+            'electron',
+            'nest-js',
+            'fast-api',
+            'django',
+            'spring-boot',
+            'laravel',
+            'flutter',
+            'express',
+            'actix'
+        ],
         {
             placeHolder: 'Выберите фрейморк',
             canPickMany: false,
@@ -385,7 +445,6 @@ export async function createStructure(context: vscode.ExtensionContext) {
             let index = Number.parseInt(selectedFromHistory.split(": ")[0]);
             if (index) {
                 index--;
-                    vscode.window.showInformationMessage(index.toString());
                 if (index <= userTemplates.length - 1) {
                     try {
                         const tree = parseStructure(userTemplates[index].structureString);

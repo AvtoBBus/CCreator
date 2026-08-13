@@ -11,49 +11,6 @@ permissions:
   contents: write
 
 jobs:
-  prepare-and-check:
-    runs-on: ubuntu-latest
-    outputs:
-      tag_version: ${{ steps.get_version.outputs.VERSION }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Extract version from tag
-        id: get_version
-        run: |
-          # Убираем префикс 'v' из тега (например, v1.2.0 -> 1.2.0)
-          TAG=${{ github.ref_name }}
-          VERSION=${TAG#v}
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Текущая версия из тега: $VERSION"
-
-      - name: Update package.json version
-        run: |
-          # Автоматически обновляем поле version в package.json
-          npm version ${{ steps.get_version.outputs.VERSION }} --no-git-tag-version
-
-      - name: Update README.md version
-        run: |
-          # Ищет вхождение badge/version-X.X.X-blue и заменяет на новую версию из тега
-          sed -i -E 's/version-[0-9]+\.[0-9]+\.[0-9]+-blue/version-${{ steps.get_version.outputs.VERSION }}-blue/g' README.md
-
-      - name: Commit and Push updates
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@://github.com"
-          
-          # Проверяем, изменились ли файлы, чтобы избежать пустых коммитов
-          if git diff --exit-code package.json README.md; then
-            echo "Файлы уже содержат актуальную версию."
-          else
-            git add package.json README.md
-            git commit -m "chore: bump version to ${{ github.ref_name }} [skip ci]"
-            git push origin main
-          fi
-
   build:
     runs-on: ubuntu-latest
     steps:

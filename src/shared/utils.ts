@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ComponentInfoType, UserSnippets, UserTemplate } from "./types";
+import { ComponentInfoType, UserTemplate } from "./types";
 
 export function upperFirstLetter(str: string): string {
     return str[0].toUpperCase() + str.slice(1);
@@ -13,13 +13,12 @@ export function getHistoryString(infoAboutComponent: ComponentInfoType): string 
     return `${resultBase}${infoAboutComponent.script} + ${infoAboutComponent.style})`;
 };
 
-export function getConfigurationParam(paramKey: 'historyLength' | 'userTemplates' | 'snippets') {
+export function getConfigurationParam(paramKey: 'historyLength' | 'userTemplates') {
     const configuration = vscode.workspace.getConfiguration('ccreator');
     const paramValue = configuration.get(paramKey);
 
     if (paramKey === 'historyLength') { return (paramValue ?? 5) as number; };
     if (paramKey === 'userTemplates') { return (paramValue ?? []) as UserTemplate[]; };
-    if (paramKey === 'snippets') { return paramValue ?? [] as UserSnippets[]; };
 };
 
 export function showError(text: string) {

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { readState, writeState } from '../shared/context';
-import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserTemplate } from '../shared/types';
+import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserSnippets, UserTemplate } from '../shared/types';
 import { templates } from '../templates';
 import { getConfigurationParam, getHistoryString, showError } from '../shared/utils';
 
@@ -16,8 +16,25 @@ const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
  * @throws Error при синтаксической ошибке.
  */
 export function parseStructure(input: string): Node[] {
-    const str = input.trim();
+    let str = input.trim();
     if (str === '') { return []; }
+
+    const snippets = (getConfigurationParam('snippets') ?? []) as UserSnippets[];
+
+    if (snippets.length) {
+        const results: Record<string, string | number | boolean> = {};
+        snippets.forEach(snippet => {
+            if (str.includes(`{${snippet.snippetName}}`)) {
+                try {
+                    results[snippet.snippetName] = eval(snippet.value)();
+                } catch (error) { }
+            };
+        });
+
+        Object.keys(results).forEach(key => {
+            str = str.replaceAll(`{${key}}`, results[key].toString());
+        });
+    }
 
     let i = 0;
 
@@ -428,7 +445,6 @@ export async function createStructure(context: vscode.ExtensionContext) {
             let index = Number.parseInt(selectedFromHistory.split(": ")[0]);
             if (index) {
                 index--;
-                    vscode.window.showInformationMessage(index.toString());
                 if (index <= userTemplates.length - 1) {
                     try {
                         const tree = parseStructure(userTemplates[index].structureString);

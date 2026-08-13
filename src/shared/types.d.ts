@@ -42,3 +42,8 @@ export type UserTemplate = {
     structureString: string,
     fileContent: Record<string, string>
 }
+
+export type UserSnippets = {
+    snippetName: string,
+    value: string
+}

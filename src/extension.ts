@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { checkForUpdates } from './autoUpdate';
-import { createStructure, editUserTemplates } from './commands';
+import { createStructure, editUserSnippets, editUserTemplates } from './commands';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -8,7 +8,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     const commands = [
         vscode.commands.registerCommand('ccreator.createStructure', async () => await createStructure(context)),
-        vscode.commands.registerCommand('ccreator.editUserTemplates', async () => await editUserTemplates(context))
+        vscode.commands.registerCommand('ccreator.editUserTemplates', async () => await editUserTemplates(context)),
+        vscode.commands.registerCommand('ccreator.snippets', async () => await editUserSnippets(context)),
     ];
 
 	commands.forEach(c => context.subscriptions.push(c));

@@ -1,8 +1,8 @@
 ---
 name: Bug report
 about: Напишите о найденном баге
-title: ''
-labels: ''
+title: "[BUG REPORT]"
+labels: bug
 assignees: ''
 
 ---

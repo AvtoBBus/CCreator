@@ -31,6 +31,11 @@
     "configuration": {
       "title": "CCreator",
       "properties": {
+        "ccreator.showLivePreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Включите, если хотите видеть отображение в виде дерева папок и файлов вводимую структуру"
+        },
         "ccreator.historyLength": {
           "type":"number",
           "default": 5,

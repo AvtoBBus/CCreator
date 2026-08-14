@@ -13,13 +13,14 @@ export function getHistoryString(infoAboutComponent: ComponentInfoType): string 
     return `${resultBase}${infoAboutComponent.script} + ${infoAboutComponent.style})`;
 };
 
-export function getConfigurationParam(paramKey: 'historyLength' | 'userTemplates' | 'snippets') {
+export function getConfigurationParam(paramKey: 'historyLength' | 'userTemplates' | 'snippets' | 'showLivePreview') {
     const configuration = vscode.workspace.getConfiguration('ccreator');
     const paramValue = configuration.get(paramKey);
 
     if (paramKey === 'historyLength') { return (paramValue ?? 5) as number; };
     if (paramKey === 'userTemplates') { return (paramValue ?? []) as UserTemplate[]; };
     if (paramKey === 'snippets') { return paramValue ?? [] as UserSnippets[]; };
+    if (paramKey === 'showLivePreview') { return paramValue ?? false as boolean; };
 };
 
 export function showError(text: string) {

@@ -379,66 +379,13 @@ async function selectFromHistory(history: ContextItem[], userTemplates: UserTemp
     ) as string | undefined;
 };
 
-export async function createStructure(context: vscode.ExtensionContext) {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) {
-        showError('Откройте папку проекта');
-        return;
-    }
-    const rootPath = workspaceFolders[0].uri.fsPath;
-    
-    let folderPath = '';
-    let select = true;
-
+export async function afterSelectFolder(context: vscode.ExtensionContext, rootPath: string, folderPath: string) {
     const infoAboutComponent: ComponentInfoType = {
         framework: undefined,
         script: undefined,
         style: undefined
     };
-
-    const createNewFolder = async () => {
-        return await vscode.window.showInputBox({
-            prompt: 'Введите имя папки',
-        });
-    };
-
-    while (select) {
-        let selectedFolder = null;
-        const folders = await getSubdirectories(folderPath.length ? path.join(rootPath, folderPath) : rootPath );
-
-        if (!folders.length) {
-            select = false;
-            selectedFolder = await createNewFolder();
-        }
-        else {
-            selectedFolder = await vscode.window.showQuickPick(
-                [CREATE_NEW_FOLDER, ...folders],
-                {
-                    placeHolder: 'Выберите папку, в которой необходимо создать компоненту',
-                    canPickMany: false,
-                    ignoreFocusOut: true
-                }
-            );
-        }
-
-        if (selectedFolder === CREATE_NEW_FOLDER) {
-            select = false;
-            selectedFolder = await createNewFolder();
-            if (!selectedFolder) {
-                showError('Необходимо указать имя папки');
-                return;
-            }
-            folderPath = path.join(folderPath, selectedFolder as string);
-        }
-        else {
-            if (!selectedFolder) {
-                showError('Необходимо выбрать папку');
-                return;
-            }
-            folderPath = path.join(folderPath, selectedFolder as string);
-        }
-    }
-
+    
     const history = readState(context);
     const userTemplates = getConfigurationParam('userTemplates') as UserTemplate[];
 
@@ -553,4 +500,61 @@ export async function createStructure(context: vscode.ExtensionContext) {
     });
 
     inputBox.show();
+}
+
+export async function createStructure(context: vscode.ExtensionContext) {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+        showError('Откройте папку проекта');
+        return;
+    }
+    const rootPath = workspaceFolders[0].uri.fsPath;
+    
+    let folderPath = '';
+    let select = true;
+
+    const createNewFolder = async () => {
+        return await vscode.window.showInputBox({
+            prompt: 'Введите имя папки',
+        });
+    };
+
+    while (select) {
+        let selectedFolder = null;
+        const folders = await getSubdirectories(folderPath.length ? path.join(rootPath, folderPath) : rootPath );
+
+        if (!folders.length) {
+            select = false;
+            selectedFolder = await createNewFolder();
+        }
+        else {
+            selectedFolder = await vscode.window.showQuickPick(
+                [CREATE_NEW_FOLDER, ...folders],
+                {
+                    placeHolder: 'Выберите папку, в которой необходимо создать компоненту',
+                    canPickMany: false,
+                    ignoreFocusOut: true
+                }
+            );
+        }
+
+        if (selectedFolder === CREATE_NEW_FOLDER) {
+            select = false;
+            selectedFolder = await createNewFolder();
+            if (!selectedFolder) {
+                showError('Необходимо указать имя папки');
+                return;
+            }
+            folderPath = path.join(folderPath, selectedFolder as string);
+        }
+        else {
+            if (!selectedFolder) {
+                showError('Необходимо выбрать папку');
+                return;
+            }
+            folderPath = path.join(folderPath, selectedFolder as string);
+        }
+    }
+
+    await afterSelectFolder(context, rootPath, folderPath);
 }

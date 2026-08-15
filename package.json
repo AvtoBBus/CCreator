@@ -17,17 +17,30 @@
     "commands": [
       {
         "command": "ccreator.createStructure",
-        "title": "Создать структуру файлов и папок для компоненты"
+        "title": "CCreator - Создать структуру файлов и папок для компоненты"
       },
       {
         "command": "ccreator.editUserTemplates",
-        "title": "Редактировать пользовательские шаблоны"
+        "title": "CCreator - Редактировать пользовательские шаблоны"
       },
       {
         "command": "ccreator.snippets",
-        "title": "Редактировать сниппеты"
+        "title": "CCreator - Редактировать сниппеты"
+      },
+      {
+          "command": "ccreator.createThere",
+          "title": "CCreator - Создать структуру здесь"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "ccreator.createThere",
+          "group": "navigation@100",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    },
     "configuration": {
       "title": "CCreator",
       "properties": {

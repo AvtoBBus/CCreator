@@ -319,62 +319,13 @@ async function selectFromHistory(history: ContextItem[], userTemplates: UserTemp
     ) as string | undefined;
 };
 
-export async function createStructure(context: vscode.ExtensionContext) {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) {
-        showError('Откройте папку проекта');
-        return;
-    }
-    const rootPath = workspaceFolders[0].uri.fsPath;
-    
-    let folderPath = '';
-    let select = true;
-
+export async function afterSelectFolder(context: vscode.ExtensionContext, rootPath: string, folderPath: string) {
     const infoAboutComponent: ComponentInfoType = {
         framework: undefined,
         script: undefined,
         style: undefined
     };
-
-    const createNewFolder = async () => {
-        return await vscode.window.showInputBox({
-            prompt: 'Введите имя папки',
-        });
-    };
-
-    while (select) {
-        let selectedFolder = null;
-        const folders = await getSubdirectories(folderPath.length ? path.join(rootPath, folderPath) : rootPath );
-
-        if (!folders.length) {
-            select = false;
-            selectedFolder = await createNewFolder();
-        }
-        else {
-            selectedFolder = await vscode.window.showQuickPick(
-                [CREATE_NEW_FOLDER, ...folders],
-                {
-                    placeHolder: 'Выберите папку, в которой необходимо создать компоненту',
-                    canPickMany: false,
-                    ignoreFocusOut: true
-                }
-            );
-        }
-
-        if (selectedFolder === CREATE_NEW_FOLDER) {
-            select = false;
-            selectedFolder = await createNewFolder();
-            folderPath = path.join(folderPath, selectedFolder as string);
-        }
-        else {
-            if (!selectedFolder) {
-                showError('Необходимо выбрать папку');
-                return;
-            }
-            folderPath = path.join(folderPath, selectedFolder as string);
-        }
-    }
-
+    
     const history = readState(context);
     const userTemplates = getConfigurationParam('userTemplates') as UserTemplate[];
 
@@ -437,22 +388,114 @@ export async function createStructure(context: vscode.ExtensionContext) {
             break;
     }
 
-    const structureString = await vscode.window.showInputBox({
-        prompt: 'Введите структуру',
-        placeHolder: 'Пример: <folder1-name|file1:file2:file3>'
+    let previewPanel = null;
+    if (getConfigurationParam('showLivePreview')) {
+        previewPanel = vscode.window.createWebviewPanel(
+            'livePreview',
+            'Интерактивное превью',
+            vscode.ViewColumn.Two,
+            { enableScripts: true }
+        );
+        const htmlPath = path.join(context.extensionPath, 'src/shared/WebviewHTML/inputPreview.html');
+        previewPanel.webview.html = await fs.readFile(htmlPath, 'utf-8');
+    }
+
+    const inputBox = vscode.window.createInputBox();
+    inputBox.title = "Введите структуру";
+    inputBox.placeholder = "Пример: <folder1-name|file1:file2:file3>";
+    inputBox.ignoreFocusOut = true;
+    
+    inputBox.onDidChangeValue(text => {
+        if (!previewPanel) { return null; }
+        try {
+            const tree = parseStructure(text);
+            previewPanel.webview.postMessage({
+                command: 'previewText',
+                value: tree
+            });
+        } catch (error) { }
     });
 
-    if (!structureString) {
-        showError('Необходимо ввести структуру');
+    inputBox.onDidAccept(async () => {
+        inputBox.hide();
+
+        if (!inputBox.value) {
+            showError('Необходимо ввести структуру');
+            return;
+        }
+        
+        try {
+            const tree = parseStructure(inputBox.value);
+            await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
+            writeState(context, { componentInfo: infoAboutComponent, structureString: inputBox.value });
+        } catch (err) {
+            showError('Ошибка парсинга:' + (err as Record<string, unknown>).message);
+            return;
+        }
+
+    });
+
+    inputBox.onDidHide(() => {
+        inputBox.dispose();
+        previewPanel?.dispose();
+    });
+
+    inputBox.show();
+}
+
+export async function createStructure(context: vscode.ExtensionContext) {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+        showError('Откройте папку проекта');
         return;
+    }
+    const rootPath = workspaceFolders[0].uri.fsPath;
+    
+    let folderPath = '';
+    let select = true;
+
+    const createNewFolder = async () => {
+        return await vscode.window.showInputBox({
+            prompt: 'Введите имя папки',
+        });
+    };
+
+    while (select) {
+        let selectedFolder = null;
+        const folders = await getSubdirectories(folderPath.length ? path.join(rootPath, folderPath) : rootPath );
+
+        if (!folders.length) {
+            select = false;
+            selectedFolder = await createNewFolder();
+        }
+        else {
+            selectedFolder = await vscode.window.showQuickPick(
+                [CREATE_NEW_FOLDER, ...folders],
+                {
+                    placeHolder: 'Выберите папку, в которой необходимо создать компоненту',
+                    canPickMany: false,
+                    ignoreFocusOut: true
+                }
+            );
+        }
+
+        if (selectedFolder === CREATE_NEW_FOLDER) {
+            select = false;
+            selectedFolder = await createNewFolder();
+            if (!selectedFolder) {
+                showError('Необходимо указать имя папки');
+                return;
+            }
+            folderPath = path.join(folderPath, selectedFolder as string);
+        }
+        else {
+            if (!selectedFolder) {
+                showError('Необходимо выбрать папку');
+                return;
+            }
+            folderPath = path.join(folderPath, selectedFolder as string);
+        }
     }
 
-    try {
-        const tree = parseStructure(structureString);
-        await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
-        writeState(context, { componentInfo: infoAboutComponent, structureString });
-    } catch (err) {
-        showError('Ошибка парсинга:' + (err as Record<string, unknown>).message);
-        return;
-    }
+    await afterSelectFolder(context, rootPath, folderPath);
 }

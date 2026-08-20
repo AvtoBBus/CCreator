@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h2>Превью в реальном времени:</h2>
+    <h3>Вводите текст, чтобы увидеть какая структура получается</h3>
+    <div id="render-target" style="padding: 10px;"></div>
+
+    <style>
+        #render-target {
+            font-size: x-large;
+        }
+    </style>
+
+    <script>
+        function createFromTree(nodes, level) {
+            if (!nodes || !Array.isArray(nodes)) return "";
+            
+            let htmlResult = "";
+
+            for (const node of nodes) {
+                const paddingLeft = level * 0.9;
+
+                if (node.type === 'folder') {
+                    htmlResult += `<div style="padding-left: ${paddingLeft}rem; margin: 0.9rem 0;"><span style="font-weight: bold;">📁 ${node.name}</span>`;
+                    htmlResult += createFromTree(node.children, level + 1);
+                    htmlResult += '</div>';
+                } else if (node.type === 'file') {
+                    htmlResult += `<div style="padding-left: ${paddingLeft}rem;">📄 ${node.name}</div>`;
+                }
+            }
+
+            return htmlResult;
+        }
+
+        const target = document.getElementById('render-target');
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'previewText') {
+                target.innerHTML = createFromTree(message.value, 0)
+            }
+        });
+    </script>
+</body>
+</html>

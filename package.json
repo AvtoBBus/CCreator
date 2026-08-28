@@ -92,31 +92,6 @@
             }
           },
           "description": "Укажите набор своих шаблонов, для более быстрой генерации структуры"
-        },
-        "ccreator.snippets": {
-          "type": "array",
-          "default": [
-            {
-              "snippetName": "CURENT_YEAR",
-              "value": "() => new Date().getFullYear()"
-            }
-          ],
-          "items": {
-            "type": "object",
-            "required": ["snippetName", "value"],
-            "properties": {
-              "snippetName": {
-                "type": "string",
-                "description": "Уникальное имя сниппета (например, 'CURENT_YEAR')."
-              },
-              "value": {
-                "type": "string",
-                "default": "() => new Date().getFullYear()",
-                "description": "JavaScript-функция, которая выполняется и результат подставляет значение на место сниппета."
-              }
-            }
-          },
-          "description": "Укажите набор сниппетов, для использования при генерации структуры"
         }
       }
     }

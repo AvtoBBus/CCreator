@@ -4,7 +4,7 @@ import * as path from 'path';
 import { readState, writeState } from '../shared/context';
 import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserTemplate } from '../shared/types';
 import { templates } from '../templates';
-import { getConfigurationParam, getHistoryString, showError } from '../shared/utils';
+import { getConfigurationParam, getHistoryString, showError, validateStructure } from '../shared/utils';
 
 const CREATE_NEW_FOLDER = "=== CREATE NEW FOLDER ===";
 const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
@@ -336,7 +336,6 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
             let index = Number.parseInt(selectedFromHistory.split(": ")[0]);
             if (index) {
                 index--;
-                    vscode.window.showInformationMessage(index.toString());
                 if (index <= userTemplates.length - 1) {
                     try {
                         const tree = parseStructure(userTemplates[index].structureString);
@@ -404,9 +403,11 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
     inputBox.title = "Введите структуру";
     inputBox.placeholder = "Пример: <folder1-name|file1:file2:file3>";
     inputBox.ignoreFocusOut = true;
-    
+
     inputBox.onDidChangeValue(text => {
-        if (!previewPanel) { return null; }
+        inputBox.validationMessage = validateStructure(text);
+
+        if (!previewPanel) { return; }
         try {
             const tree = parseStructure(text);
             previewPanel.webview.postMessage({
@@ -439,6 +440,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
         inputBox.dispose();
         previewPanel?.dispose();
     });
+
 
     inputBox.show();
 }

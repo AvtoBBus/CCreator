@@ -20,7 +20,7 @@ export interface FolderNode {
 
 export type Node = FileNode | FolderNode;
 
-export type Frameworks = 'svelte' | 'react' | 'vue' | 'angular';
+export type Frameworks = 'svelte' | 'react' | 'vue' | 'angular' | 'next-js' | 'electron' | 'nest-js' | 'fast-api' | 'django' | 'spring-boot' | 'laravel' | 'flutter' | 'express' | 'actix';
 export type Scripts = 'ts' | 'js';
 export type Styles = 'scss' | 'less' | 'css';
 export type ReactComponentType = 'class' | 'function';
@@ -41,4 +41,9 @@ export type UserTemplate = {
     templateName: string,
     structureString: string,
     fileContent: Record<string, string>
+}
+
+export type UserSnippets = {
+    snippetName: string,
+    value: string
 }

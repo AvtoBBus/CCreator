@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { readState, writeState } from '../shared/context';
-import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserTemplate } from '../shared/types';
+import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserSnippets, UserTemplate } from '../shared/types';
 import { templates } from '../templates';
-import { getConfigurationParam, getHistoryString, showError, validateStructure } from '../shared/utils';
+import { formatGeneratedFile, getConfigurationParam, getHistoryString, showError, validateStructure } from '../shared/utils';
 
 const CREATE_NEW_FOLDER = "=== CREATE NEW FOLDER ===";
 const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
@@ -16,8 +16,25 @@ const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
  * @throws Error при синтаксической ошибке.
  */
 export function parseStructure(input: string): Node[] {
-    const str = input.trim();
+    let str = input.trim();
     if (str === '') { return []; }
+
+    const snippets = (getConfigurationParam('snippets') ?? []) as UserSnippets[];
+
+    if (snippets.length) {
+        const results: Record<string, string | number | boolean> = {};
+        snippets.forEach(snippet => {
+            if (str.includes(`{${snippet.snippetName}}`)) {
+                try {
+                    results[snippet.snippetName] = eval(snippet.value)();
+                } catch (error) { }
+            };
+        });
+
+        Object.keys(results).forEach(key => {
+            str = str.replaceAll(`{${key}}`, results[key].toString());
+        });
+    }
 
     let i = 0;
 
@@ -202,6 +219,7 @@ async function createFromTree(rootPath: string, nodes: Node[], infoAboutComponen
             const checkFormatTemplate = node.noTemplate ? undefined : checkFormatAndGetTeplateFunction(path.extname(fullPath));
             const content = !hasExtension ? (templateFunction ? templateFunction(node.name) : '') : (checkFormatTemplate ? checkFormatTemplate(node.name) : '');
             await fs.writeFile(filePath, content, 'utf8');
+            await formatGeneratedFile(filePath);
         }
     }
 }
@@ -238,15 +256,18 @@ async function createFromTreeByTemplate(rootPath: string, nodes: Node[], filesIn
                 if (!curFound) {
                     if (lastFound) {
                         await fs.writeFile(fullPath, filesInfo[lastFound], 'utf8');
+                        await formatGeneratedFile(fullPath);
                     }
                     else {
                         const templateFunction = node.noTemplate ? undefined : getGenerateTemplateFunction(getInfoAboutComponentByFormat(extName));
                         const checkFormatTemplate = node.noTemplate ? undefined : checkFormatAndGetTeplateFunction(extName);
                         const content = !hasExtension ? (templateFunction ? templateFunction(node.name) : '') : (checkFormatTemplate ? checkFormatTemplate(node.name) : '');
                         await fs.writeFile(fullPath, content, 'utf8');
+                        await formatGeneratedFile(fullPath);
                     }
                 } else {
                         await fs.writeFile(fullPath, filesInfo[curFound], 'utf8');
+                        await formatGeneratedFile(fullPath);
                 }
             }
         }

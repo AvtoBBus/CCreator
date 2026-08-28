@@ -125,4 +125,15 @@ export function validateStructure(text: string): string | undefined {
     }
 
     return undefined; 
-}
+};
+
+export async function formatGeneratedFile(filePath: string) {
+    try {
+        const document = await vscode.workspace.openTextDocument(filePath);
+        await vscode.window.showTextDocument(document, { preview: false });
+        await vscode.commands.executeCommand('editor.action.formatDocument');
+        await document.save();
+    } catch (error) {
+        showError(`Ошибка Prettier для файла ${filePath}: ${error}`);
+    }
+};

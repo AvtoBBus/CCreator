@@ -47,3 +47,5 @@ export type UserSnippets = {
     snippetName: string,
     value: string
 }
+
+export type ConfigurationParamKey = 'historyLength' | 'userTemplates' | 'snippets' | 'showLivePreview' | 'useLinter';

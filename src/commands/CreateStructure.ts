@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { readState, writeState } from '../shared/context';
+import { readState, writeState } from '../shared/state';
 import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserSnippets, UserTemplate } from '../shared/types';
 import { templates } from '../templates';
 import { formatGeneratedFile, getConfigurationParam, getHistoryString, showError, validateStructure } from '../shared/utils';
@@ -15,11 +15,11 @@ const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
  * @returns массив узлов верхнего уровня.
  * @throws Error при синтаксической ошибке.
  */
-export function parseStructure(input: string): Node[] {
+export async function parseStructure(input: string): Promise<Node[]> {
     let str = input.trim();
     if (str === '') { return []; }
 
-    const snippets = (getConfigurationParam('snippets') ?? []) as UserSnippets[];
+    const snippets = await getConfigurationParam('snippets') as UserSnippets[];
 
     if (snippets.length) {
         const results: Record<string, string | number | boolean> = {};
@@ -348,7 +348,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
     };
     
     const history = readState(context);
-    const userTemplates = getConfigurationParam('userTemplates') as UserTemplate[];
+    const userTemplates = await getConfigurationParam('userTemplates') as UserTemplate[];
 
     if (history.length) {
         const selectedFromHistory: string = await selectFromHistory(history, userTemplates) ?? CREATE_NEW_TEMPLATE;
@@ -359,7 +359,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
                 index--;
                 if (index <= userTemplates.length - 1) {
                     try {
-                        const tree = parseStructure(userTemplates[index].structureString);
+                        const tree = await parseStructure(userTemplates[index].structureString);
                         await createFromTreeByTemplate(path.join(rootPath, folderPath), tree, userTemplates[index].fileContent);
                     } catch (error) {
                         showError('Ошибка парсинга:' + (error as Record<string, unknown>).message);
@@ -374,7 +374,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
                     infoAboutComponent.style = history[index].componentInfo.style;
                     infoAboutComponent.componentType = history[index].componentInfo.componentType;
                     try {
-                        const tree = parseStructure(history[index].structureString);
+                        const tree = await parseStructure(history[index].structureString);
                         await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
                     } catch (error) {
                         showError('Ошибка парсинга:' + (error as Record<string, unknown>).message);
@@ -409,7 +409,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
     }
 
     let previewPanel = null;
-    if (getConfigurationParam('showLivePreview')) {
+    if (await getConfigurationParam('showLivePreview')) {
         previewPanel = vscode.window.createWebviewPanel(
             'livePreview',
             'Интерактивное превью',
@@ -425,12 +425,12 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
     inputBox.placeholder = "Пример: <folder1-name|file1:file2:file3>";
     inputBox.ignoreFocusOut = true;
 
-    inputBox.onDidChangeValue(text => {
+    inputBox.onDidChangeValue(async text => {
         inputBox.validationMessage = validateStructure(text);
 
         if (!previewPanel) { return; }
         try {
-            const tree = parseStructure(text);
+            const tree = await parseStructure(text);
             previewPanel.webview.postMessage({
                 command: 'previewText',
                 value: tree
@@ -447,9 +447,9 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
         }
         
         try {
-            const tree = parseStructure(inputBox.value);
+            const tree = await parseStructure(inputBox.value);
             await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
-            writeState(context, { componentInfo: infoAboutComponent, structureString: inputBox.value });
+            await writeState(context, { componentInfo: infoAboutComponent, structureString: inputBox.value });
         } catch (err) {
             showError('Ошибка парсинга:' + (err as Record<string, unknown>).message);
             return;

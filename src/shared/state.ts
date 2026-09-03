@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 import { ContextItem } from './types';
 import { getConfigurationParam } from './utils';
+import { contextKey } from './constants';
 
-const contextKey = 'CCreator_history_';
-
-export function writeState(context: vscode.ExtensionContext, newItem: ContextItem): void {
+export async function writeState(context: vscode.ExtensionContext, newItem: ContextItem): Promise<void> {
     let prevState = context.globalState.get<ContextItem[]>(contextKey) ?? [];
-    const historyLengthFromParams = getConfigurationParam('historyLength') as number;
+    const historyLengthFromParams = await getConfigurationParam('historyLength') as number;
     if (prevState.length > historyLengthFromParams) {
         prevState = prevState.slice(0, historyLengthFromParams - 1);
     }

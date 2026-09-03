@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import type { ComponentInfoType, UserTemplate, UserSnippets } from "./types";
+import type { ComponentInfoType, UserTemplate, UserSnippets, ConfigurationParamKey } from "./types";
+import { getValueFromConfig } from '$commands/CreateOrLoadConfiig';
 
 export function upperFirstLetter(str: string): string {
     return str[0].toUpperCase() + str.slice(1);
@@ -13,14 +14,17 @@ export function getHistoryString(infoAboutComponent: ComponentInfoType): string 
     return `${resultBase}${infoAboutComponent.script} + ${infoAboutComponent.style})`;
 };
 
-export function getConfigurationParam(paramKey: 'historyLength' | 'userTemplates' | 'snippets' | 'showLivePreview') {
+export async function getConfigurationParam(paramKey: ConfigurationParamKey): Promise<number | boolean | UserTemplate[] | UserSnippets[] | undefined> {
     const configuration = vscode.workspace.getConfiguration('ccreator');
-    const paramValue = configuration.get(paramKey);
+    const tryGetFromConfig = await getValueFromConfig(paramKey);
+    const paramValue = tryGetFromConfig !== undefined ? tryGetFromConfig : configuration.get(paramKey);
 
     if (paramKey === 'historyLength') { return (paramValue ?? 5) as number; };
     if (paramKey === 'userTemplates') { return (paramValue ?? []) as UserTemplate[]; };
-    if (paramKey === 'snippets') { return paramValue ?? [] as UserSnippets[]; };
-    if (paramKey === 'showLivePreview') { return paramValue ?? false as boolean; };
+    if (paramKey === 'snippets') { return (paramValue ?? []) as UserSnippets[]; };
+    if (paramKey === 'showLivePreview') { return (paramValue ?? false) as boolean; };
+    if (paramKey === 'useLinter') { return (paramValue ?? false) as boolean; };
+    return undefined;
 };
 
 export function showError(text: string) {
@@ -128,6 +132,10 @@ export function validateStructure(text: string): string | undefined {
 };
 
 export async function formatGeneratedFile(filePath: string) {
+    const useLinter = await getConfigurationParam('useLinter') as boolean;
+
+    if (!useLinter) { return; }
+
     try {
         const document = await vscode.workspace.openTextDocument(filePath);
         await vscode.window.showTextDocument(document, { preview: false });

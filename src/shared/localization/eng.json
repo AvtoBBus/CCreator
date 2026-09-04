@@ -1,0 +1,79 @@
+{
+    "errors": {
+        "needSelectDir": "A workspace folder must be opened to proceed",
+        "linterError": "Linter error in file",
+        "readDirError": "Failed to read directory",
+        "parsingError": "Parsing error",
+        "needSelectFramework": "Please select a framework",
+        "needInputStructure": "Please enter a structure",
+        "needDirName": "Folder name is required",
+        "saveError": "Failed to save"
+    },
+    "validation": {
+        "angleBalanceBelow": "👉 Error: closing bracket '>' appears before opening bracket '<'",
+        "angleBalanceAbove": "👉 Expected closing bracket '>'",
+        "squareBalanceBelow": "👉 Error: closing bracket ']' appears before opening bracket '['",
+        "squareBalanceAbove": "👉 Expected closing bracket ']' for enumeration",
+        "curlyBalanceBelow": "👉 Error: closing bracket '}' appears before opening bracket '{'",
+        "curlyBalanceAbove": "👉 Expected closing bracket '}' for variable",
+        "emptyArray": "👉 Enumeration [...] cannot be empty",
+        "emptySnippet": "👉 Variable name {...} cannot be empty",
+        "doubleComma": "👉 Double comma ',,' detected. Please remove the extra one",
+        "commaBeforeSquare": "👉 Extra comma before closing square bracket ']'",
+        "commaAfterSquare": "👉 Extra comma after opening square bracket '['",
+        "extentionAfterSquare": "👉 Closing square bracket ']' must be followed by a file extension (e.g., .ts)",
+        "commaOutsideSquare": "👉 Comma ',' is only allowed inside square brackets [file1,file2]",
+        "enclosureError": "👉 Nesting error: curly bracket '{' must be closed inside the enumeration",
+        "wrongStart": "👉 String cannot start with the following characters: ",
+        "wrongEnd": "👉 String cannot end with the following characters: ",
+        "squareDots": "👉 Double colon '::' detected. Please remove the extra one",
+        "doubleVertical": "👉 Double separator '||' detected. Please remove the extra one",
+        "wrongName": "👉 File or folder name contains forbidden characters (e.g., \\, \", *, ?)"
+    },
+    "configFile": {
+        "init": "Create config file",
+        "write": "Overwrite current config file with these parameters",
+        "pickCommand": "Select config action",
+        "needCreateConfig": "You need to create a config file first",
+        "commandNotSuppot": "is not supported"
+    },
+    "createStructure": {
+        "selectFramework": "Select framework",
+        "selectScript": "Select script language",
+        "selectStyle": "Select style language",
+        "selectComponentType": "Select React component type",
+        "selectFromHistory": "Select an existing item or create a new one",
+        "livePreviewTitle": "Live Preview",
+        "inputStructureTitle": "Enter structure",
+        "inputFolderName": "Enter folder name",
+        "selectFolder": "Select the target folder to create the component in"
+    },
+    "snippets": {
+        "webViewTitle": "CCreator - Edit Snippets",
+        "successSave": "Snippets saved successfully!",
+        "webViewHeader": "Manage Snippets",
+        "webViewDescription": "Create variables to use when generating folder and file structures. <br/> Template usage example:",
+        "webViewAddSnippet": "Add new snippet",
+        "webViewSaveSnippets": "Save snippets to VS Code settings",
+        "webViewEmptyList": "The snippet list is empty. Click the button below to add your first snippet.",
+        "webViewVariableName": "Variable Name",
+        "webViewJSCode": "JS Function Code",
+        "webViewDeleteSnippet": "Delete snippet"
+    },
+    "templates": {
+        "webViewTitle": "CCreator - Edit User Templates",
+        "successSave": "Templates saved successfully!",
+        "successDelete": "Preset deleted",
+        "webViewHeader": "Manage Presets",
+        "webViewAddPreset": "Add new preset",
+        "webViewSavePresets": "Save presets to VS Code settings",
+        "webViewDeletePreset": "Delete preset",
+        "webViewPresetName": "Preset Name",
+        "webViewPresetNoname": "Untitled",
+        "webViewPresetStructureString": "Structure String",
+        "webViewPresetFiles": "Files in Preset",
+        "webViewPresetAddFile": "Add file to this preset",
+        "webViewFileContentPlaceholder": "File code",
+        "webViewNewPresetName": "New Preset"
+    }
+}

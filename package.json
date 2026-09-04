@@ -1,8 +1,8 @@
 {
   "name": "ccreator",
   "displayName": "CCreator",
-  "description": "Расширение для генерации компоненты согласно структуры",
-  "version": "1.1.1",
+  "description": "Extension for generating file and directory structures",
+  "version": "1.2.0",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.125.0"
@@ -17,20 +17,51 @@
     "commands": [
       {
         "command": "ccreator.createStructure",
-        "title": "Создать структуру файлов и папок для компоненты"
+        "title": "CCreator - Create file and directory structure"
       },
       {
         "command": "ccreator.editUserTemplates",
-        "title": "Редактировать пользовательские шаблоны"
+        "title": "CCreator - Edit user templates"
+      },
+      {
+        "command": "ccreator.snippets",
+        "title": "CCreator - Edit snippets"
+      },
+      {
+          "command": "ccreator.createThere",
+          "title": "CCreator - Create structure here"
+      },
+      {
+          "command": "ccreator.configFile",
+          "title": "CCreator - Configure settings file"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "ccreator.createThere",
+          "group": "navigation@100",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    },
     "configuration": {
       "title": "CCreator",
       "properties": {
+        "ccreator.showLivePreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable to display the input structure as a folder and file tree."
+        },
         "ccreator.historyLength": {
           "type":"number",
           "default": 5,
-          "description": "Количество элементов сохраняемых в истории (default = 5)"
+          "description": "Number of items to keep in history (default = 5)."
+        },
+        "ccreator.useLinter": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run linter after file generation."
         },
         "ccreator.userTemplates": {
           "type": "array",
@@ -53,23 +84,61 @@
             "properties": {
               "templateName": {
                 "type": "string",
-                "description": "Уникальное имя пресета (например, 'Svelte Component' или 'React Module')."
+                "description": "A unique name for the preset (e.g., 'Svelte Component' or 'React Module')."
               },
               "structureString": {
                 "type": "string",
                 "default": "Comp.svelte:Comp.vue:Comp.tsx:Comp.jsx:Comp.component.ts",
-                "description": "Строка структуры папок."
+                "description": "Folder and file structure string."
               },
               "fileContent": {
                 "type": "object",
-                "description": "Словарь файлов. Ключ — маска расширения (например, '*.svelte') или точное имя файла (например, 'index.ts'). Значение — контент файла.",
+                "description": "File dictionary. The key is an extension mask (e.g., '*.svelte') or an exact filename (e.g., 'index.ts'). The value is the file content.",
                 "additionalProperties": {
                   "type": "string"
                 }
               }
             }
           },
-          "description": "Укажите набор своих шаблонов, для более быстрой генерации структуры"
+          "description": "Specify a set of your custom templates for faster structure generation."
+        },
+        "ccreator.snippets": {
+          "type": "array",
+          "default": [
+            {
+              "snippetName": "CURENT_YEAR",
+              "value": "() => new Date().getFullYear()"
+            }
+          ],
+          "items": {
+            "type": "object",
+            "required": ["snippetName", "value"],
+            "properties": {
+              "snippetName": {
+                "type": "string",
+                "description": "A unique name for the snippet (e.g., 'CURRENT_YEAR')."
+              },
+              "value": {
+                "type": "string",
+                "default": "() => new Date().getFullYear()",
+                "description": "A JavaScript function that executes and replaces the snippet placeholder with its return value."
+              }
+            }
+          },
+          "description": "Specify a set of snippets to use during structure generation."
+        },
+        "ccreator.language": {
+          "type": "string",
+          "default": "eng",
+          "enum": [
+            "eng",
+            "rus"
+          ],
+          "enumDescriptions": [
+            "English",
+            "Русский"
+          ],
+          "description": "Select tool language."
         }
       }
     }

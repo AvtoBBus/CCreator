@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { showError } from "../shared/utils";
+import { getLocalizationText, showError } from "../shared/utils";
 import { UserTemplate } from '../shared/types';
 
 export async function editUserTemplates(context: vscode.ExtensionContext) {
         const panel = vscode.window.createWebviewPanel(
             'ccreatoreditUserTemplates',
-            'CCreator - Редактировать пользовательские шаблоны',
+            await getLocalizationText("templates:webViewTitle"),
             vscode.ViewColumn.One,
             { enableScripts: true }
         );
@@ -13,7 +13,7 @@ export async function editUserTemplates(context: vscode.ExtensionContext) {
         const config = vscode.workspace.getConfiguration('ccreator');
         const currentTemplates = config.get<UserTemplate[]>('userTemplates', []);
 
-        panel.webview.html = getWebviewContent(currentTemplates);
+        panel.webview.html = await getWebviewContent(currentTemplates);
 
         panel.webview.onDidReceiveMessage(
             async (message) => {
@@ -24,9 +24,9 @@ export async function editUserTemplates(context: vscode.ExtensionContext) {
                             message.data, 
                             vscode.ConfigurationTarget.Global
                         );
-                        vscode.window.showInformationMessage('Шаблоны CCreator успешно сохранены!');
+                        vscode.window.showInformationMessage(await getLocalizationText("templates:successSave"));
                     } catch (err) {
-                        showError(`Ошибка сохранения: ${(err as Record<string, unknown>).message}`);
+                        showError(await getLocalizationText("errors:saveError"));
                     }
                 }
                 if (message.command === 'deleteTemplate') {
@@ -36,9 +36,9 @@ export async function editUserTemplates(context: vscode.ExtensionContext) {
                             message.data.newPresets, 
                             vscode.ConfigurationTarget.Global
                         );
-                        vscode.window.showInformationMessage(`Удален пресет: ${message.data.deleted}`);
+                        vscode.window.showInformationMessage(`${await getLocalizationText("templates:successDelete")}: ${message.data.deleted}`);
                     } catch (err) {
-                        showError(`Ошибка удаления: ${(err as Record<string, unknown>).message}`);
+                        showError(await getLocalizationText("errors:saveError"));
                     }
                 }
             },
@@ -47,7 +47,7 @@ export async function editUserTemplates(context: vscode.ExtensionContext) {
         );
 }
 
-function getWebviewContent(templates: UserTemplate[]) {
+async function getWebviewContent(templates: UserTemplate[]) {
     const templatesJson = JSON.stringify(templates).replace(/</g, '\\u003c');
 
     return `
@@ -69,15 +69,14 @@ function getWebviewContent(templates: UserTemplate[]) {
         </style>
     </head>
     <body>
-        <h2>Управление шаблонами CCreator</h2>
+        <h2>${await getLocalizationText("templates:webViewHeader")}</h2>
         <div id="container"></div>
-        <button id="addPresetBtn">+ Добавить новый пресет</button>
+        <button id="addPresetBtn">+ ${await getLocalizationText("templates:webViewAddPreset")}</button>
         <hr/>
-        <button class="btn-save" id="saveBtn">Сохранить всё в настройки VS Code</button>
+        <button class="btn-save" id="saveBtn">${await getLocalizationText("templates:webViewSavePresets")}</button>
 
         <script>
             const vscode = acquireVsCodeApi();
-            // Загружаем переданные из расширения данные
             let templates = ${templatesJson};
 
             function render() {
@@ -89,29 +88,28 @@ function getWebviewContent(templates: UserTemplate[]) {
                     box.className = 'template-box';
 
                     box.innerHTML = \`
-                    <h3 class="preset-title">Пресет: \${tpl.templateName || 'Без названия'}<button id="deleteBtn" preset-id=\${tplIdx} onclick="deleteTemplate(\${tplIdx})">Удалить пресет</button></h3>
-                    <label>Имя пресета:
+                    <h3 class="preset-title">\${tpl.templateName || '${await getLocalizationText("templates:webViewPresetNoname")}'}<button id="deleteBtn" preset-id=\${tplIdx} onclick="deleteTemplate(\${tplIdx})">${await getLocalizationText("templates:webViewDeletePreset")}</button></h3>
+                    <label>${await getLocalizationText("templates:webViewPresetName")}:
                         <input type="text" value="\${tpl.templateName}" onchange="updateTemplate(\${tplIdx}, 'templateName', this.value)">
                     </label>
                     <br/><br/>
-                    <label>Строка структуры (structureString):
+                    <label>${await getLocalizationText("templates:webViewPresetStructureString")}:
                         <input type="text" value="\${tpl.structureString || ''}" onchange="updateTemplate(\${tplIdx}, 'structureString', this.value)">
                     </label>
-                    <h4>Файлы в пресете:</h4>
+                    <h4>${await getLocalizationText("templates:webViewPresetFiles")}:</h4>
                     <div id="files-\${tplIdx}"></div>
-                    <button onclick="addFile(\${tplIdx})">+ Добавить файл в этот пресет</button>
+                    <button onclick="addFile(\${tplIdx})">+ ${await getLocalizationText("templates:webViewPresetAddFile")}</button>
                     \`;
 
                     container.appendChild(box);
 
-                    // Рендерим файлы (fileContent) для этого пресета
                     const filesContainer = box.querySelector(\`#files-\${tplIdx}\`);
                     Object.entries(tpl.fileContent || {}).forEach(([mask, content]) => {
                         const fileRow = document.createElement('div');
                         fileRow.style.marginBottom = '10px';
                         fileRow.innerHTML = \`
                             <input type="text" value="\${mask}" style="width: 25%; display:inline-block;" placeholder="*.svelte" onchange="updateFileKey(\${tplIdx}, '\${mask}', this.value)">
-                            <textarea placeholder="Код файла..." style="width: 70%; display:inline-block; vertical-align: top; margin-left: 5px;" onchange="updateFileContent(\${tplIdx}, '\${mask}', this.value)">\${content}</textarea>
+                            <textarea placeholder="${await getLocalizationText("templates:webViewFileContentPlaceholder")}..." style="width: 70%; display:inline-block; vertical-align: top; margin-left: 5px;" onchange="updateFileContent(\${tplIdx}, '\${mask}', this.value)">\${content}</textarea>
                         \`;
                         filesContainer.appendChild(fileRow);
                     });
@@ -136,7 +134,7 @@ function getWebviewContent(templates: UserTemplate[]) {
             };
 
             window.deleteTemplate = (tplIdx) => {
-                const presetName = templates[tplIdx].templateName || 'Без названия';
+                const presetName = templates[tplIdx].templateName || ${await getLocalizationText("templates:webViewPresetNoname")};
                 templates.splice(tplIdx, 1);
                 
                 render();
@@ -145,7 +143,7 @@ function getWebviewContent(templates: UserTemplate[]) {
             };
 
             document.getElementById('addPresetBtn').addEventListener('click', () => {
-                templates.push({ templateName: 'Новый пресет', structureString: '', fileContent: {} });
+                templates.push({ templateName: '${await getLocalizationText("templates:webViewNewPresetName")}', structureString: '', fileContent: {} });
                 render();
             });
 

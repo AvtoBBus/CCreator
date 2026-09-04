@@ -1,0 +1,79 @@
+{
+    "errors": {
+        "needSelectDir": "Необходимо открыть директорию для работы",
+        "linterError": "Ошибка линтера для файла",
+        "readDirError": "Ошибка чтения директории",
+        "parsingError": "Ошибка парсинга",
+        "needSelectFramework": "Необходимо выбрать фреймворк",
+        "needInputStructure": "Необходимо ввести структуру",
+        "needDirName": "Необходимо указать имя папки",
+        "saveError": "Ошибка сохранения"
+    },
+    "validation": {
+        "angleBalanceBelow": "👉 Ошибка: закрывающая '>' идет раньше открывающей '<'",
+        "angleBalanceAbove": "👉 Ожидается закрывающая скобка '>'",
+        "squareBalanceBelow": "👉 Ошибка: закрывающая ']' идет раньше открывающей '['",
+        "squareBalanceAbove": "👉 Ожидается закрывающая скобка ']' для перечисления",
+        "curlyBalanceBelow": "👉 Ошибка: закрывающая '}' идет раньше открывающей '{'",
+        "curlyBalanceAbove": "👉 Ожидается закрывающая скобка '}' для переменной",
+        "emptyArray": "👉 Перечисление [...] не может быть пустым",
+        "emptySnippet": "👉 Имя переменной {...} не может быть пустым",
+        "doubleComma": "👉 Обнаружена двойная запятая ',,'. Удалите лишнюю",
+        "commaBeforeSquare": "👉 Лишняя запятая перед закрывающей квадратной скобкой ']'",
+        "commaAfterSquare": "👉 Лишняя запятая после открывающей квадратной скобки '['",
+        "extentionAfterSquare": "👉 После закрывающей квадратной скобки ']' должно идти расширение файла (например: .ts)",
+        "commaOutsideSquare": "👉 Запятая ',' разрешена только внутри квадратных скобок [file1,file2]",
+        "enclosureError": "👉 Нарушена вложенность: фигурная скобка '{' должна закрыться внутри перечисления",
+        "wrongStart": "👉 Строка не может начинаться с символов: ",
+        "wrongEnd": "👉 Строка не может заканчиваться на символы: ",
+        "squareDots": "👉 Обнаружено двойное двоеточие '::'. Удалите лишнее",
+        "doubleVertical": "👉 Обнаружен двойной разделитель '||'. Удалите лишнее",
+        "wrongName": "👉 Имя файла или папки содержит запрещенные символы (например: \\, \", *, ?)"
+    },
+    "configFile": {
+        "init": "Создать конфиг-файл",
+        "write": "Перезаписать текущие конфиг-файл согласно параметрам",
+        "pickCommand": "Выберите, что сделать с конфигом",
+        "needCreateConfig": "Сначало необходимо создать файл с конфигом",
+        "commandNotSuppot": "не поддерживается"
+    },
+    "createStructure": {
+        "selectFramework": "Выберите фрейморк",
+        "selectScript": "Выберите язык скрипта",
+        "selectStyle": "Выберите язык стилей",
+        "selectComponentType": "Выберите тип React-компоненты",
+        "selectFromHistory": "Выберите элемент уже готовый или создайте новый",
+        "livePreviewTitle": "Интерактивное превью",
+        "inputStructureTitle": "Введите структуру",
+        "inputFolderName": "Введите имя папки",
+        "selectFolder": "Выберите папку, в которой необходимо создать компоненту"
+    },
+    "snippets": {
+        "webViewTitle": "CCreator - Редактировать сниппеты",
+        "successSave": "Сниппеты успешно сохранены!",
+        "webViewHeader": "Управление сниппетами",
+        "webViewDescription": "Создайте переменные, которые можно использовать при генерации структуры папок и файлов. <br/> Пример использования в шаблоне:",
+        "webViewAddSnippet": "Добавить новый сниппет",
+        "webViewSaveSnippets": "Сохранить сниппеты в настройки VS Code",
+        "webViewEmptyList": "Список сниппетов пуст. Нажмите кнопку ниже, чтобы добавить первый сниппет.",
+        "webViewVariableName": "Имя переменной",
+        "webViewJSCode": "JS Код функции",
+        "webViewDeleteSnippet": "Удалить сниппет"
+    },
+    "templates": {
+        "webViewTitle": "CCreator - Редактировать пользовательские шаблоны",
+        "successSave": "Шаблоны успешно сохранены!",
+        "successDelete": "Удален пресет",
+        "webViewHeader": "Управление пресетами",
+        "webViewAddPreset": "Добавить новый пресет",
+        "webViewSavePresets": "Сохранить пресеты в настройки VS Code",
+        "webViewDeletePreset": "Удалить пресет",
+        "webViewPresetName": "Имя пресета",
+        "webViewPresetNoname": "Без названия",
+        "webViewPresetStructureString": "Строка структуры",
+        "webViewPresetFiles": "Файлы в пресете",
+        "webViewPresetAddFile": "Добавить файл в этот пресет",
+        "webViewFileContentPlaceholder": "Код файла",
+        "webViewNewPresetName": "Новый пресет"
+    }
+}

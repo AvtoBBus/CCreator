@@ -48,4 +48,4 @@ export type UserSnippets = {
     value: string
 }
 
-export type ConfigurationParamKey = 'historyLength' | 'userTemplates' | 'snippets' | 'showLivePreview' | 'useLinter';
+export type ConfigurationParamKey = 'historyLength' | 'userTemplates' | 'snippets' | 'showLivePreview' | 'useLinter' | 'language';

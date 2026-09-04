@@ -4,7 +4,7 @@ import * as path from 'path';
 import { readState, writeState } from '../shared/state';
 import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserSnippets, UserTemplate } from '../shared/types';
 import { templates } from '../templates';
-import { formatGeneratedFile, getConfigurationParam, getHistoryString, showError, validateStructure } from '../shared/utils';
+import { formatGeneratedFile, getConfigurationParam, getHistoryString, getLocalizationText, showError, validateStructure } from '../shared/utils';
 
 const CREATE_NEW_FOLDER = "=== CREATE NEW FOLDER ===";
 const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
@@ -56,13 +56,13 @@ export async function parseStructure(input: string): Promise<Node[]> {
                     i++;
                 }
                 if (i >= str.length || str[i] !== '|') {
-                    throw new Error(`Expected '|' after folder name at position ${i}`);
+                    throw new Error();
                 }
                 i++;
 
                 const children = parseElements('>');
                 if (i >= str.length || str[i] !== '>') {
-                    throw new Error(`Expected '>' at position ${i}`);
+                    throw new Error();
                 }
                 i++;
 
@@ -120,7 +120,7 @@ export async function parseStructure(input: string): Promise<Node[]> {
                     i++;
                 }
                 if (name.trim() === '') {
-                    throw new Error(`Empty file name at position ${i}`);
+                    throw new Error();
                 }
                 const checkNoTemplate = name.startsWith('!');
                 result.push({
@@ -143,7 +143,7 @@ export async function parseStructure(input: string): Promise<Node[]> {
     // Запускаем парсинг верхнего уровня
     const result = parseElements(undefined);
     if (i !== str.length) {
-        throw new Error(`Unexpected character '${str[i]}' at position ${i}`);
+        throw new Error();
     }
     return result;
 }
@@ -156,7 +156,7 @@ async function getSubdirectories(dirPath: string): Promise<string[]> {
       .filter(entry => entry.isDirectory())
       .map(entry => entry.name);
   } catch (err) {
-    console.error('Ошибка чтения директории:', err);
+    showError(await getLocalizationText("errors:readDirError"));
     return [];
   }
 }
@@ -278,7 +278,7 @@ async function getFramework(): Promise<Frameworks | undefined> {
     return await vscode.window.showQuickPick(
         ['svelte', 'react', 'vue', 'angular'],
         {
-            placeHolder: 'Выберите фрейморк',
+            placeHolder: await getLocalizationText("createStructure:selectFramework"),
             canPickMany: false,
             ignoreFocusOut: true
         }
@@ -289,7 +289,7 @@ async function getScript(): Promise<Scripts | undefined> {
     return await vscode.window.showQuickPick(
         ['ts', 'js'] as Scripts[],
         {
-            placeHolder: 'Выберите язык скрипта (ts - по умолчанию)',
+            placeHolder: await getLocalizationText("createStructure:selectScript"),
             canPickMany: false,
             ignoreFocusOut: true
         }
@@ -300,7 +300,7 @@ async function getStyles(): Promise<Styles | undefined> {
     return await vscode.window.showQuickPick(
         ['scss', 'less', 'css'],
         {
-            placeHolder: 'Выберите язык стилей (scss - по умолчанию)',
+            placeHolder: await getLocalizationText("createStructure:selectStyle"),
             canPickMany: false,
             ignoreFocusOut: true
         }
@@ -311,7 +311,7 @@ async function getComponentType(): Promise<ReactComponentType | undefined> {
     return await vscode.window.showQuickPick(
         ['class', 'function'],
         {
-            placeHolder: 'Выберите тип React-компоненты (function - по умолчанию)',
+            placeHolder: await getLocalizationText("createStructure:selectComponentType"),
             canPickMany: false,
             ignoreFocusOut: true
         }
@@ -333,7 +333,7 @@ async function selectFromHistory(history: ContextItem[], userTemplates: UserTemp
             })
         ],
         {
-            placeHolder: 'Выберите элемент уже готовый или создайте новый',
+            placeHolder: await getLocalizationText("createStructure:selectFromHistory"),
             canPickMany: false,
             ignoreFocusOut: true
         }
@@ -362,7 +362,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
                         const tree = await parseStructure(userTemplates[index].structureString);
                         await createFromTreeByTemplate(path.join(rootPath, folderPath), tree, userTemplates[index].fileContent);
                     } catch (error) {
-                        showError('Ошибка парсинга:' + (error as Record<string, unknown>).message);
+                        showError(await getLocalizationText("errors:parsingError"));
                         return;
                     } finally {
                         return;
@@ -377,7 +377,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
                         const tree = await parseStructure(history[index].structureString);
                         await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
                     } catch (error) {
-                        showError('Ошибка парсинга:' + (error as Record<string, unknown>).message);
+                        showError(await getLocalizationText("errors:parsingError"));
                         return;
                     } finally {
                         return;
@@ -390,7 +390,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
     infoAboutComponent.framework = await getFramework();
 
     if (!infoAboutComponent.framework) {
-        showError('Необходимо выбрать фреймворк');
+        showError(await getLocalizationText("errors:needSelectFramework"));
         return;
     }
 
@@ -412,21 +412,22 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
     if (await getConfigurationParam('showLivePreview')) {
         previewPanel = vscode.window.createWebviewPanel(
             'livePreview',
-            'Интерактивное превью',
+            await getLocalizationText("createStructure:livePreviewTitle"),
             vscode.ViewColumn.Two,
             { enableScripts: true }
         );
-        const htmlPath = path.join(context.extensionPath, 'src/shared/WebviewHTML/inputPreview.html');
+        const language = await getConfigurationParam('language') as string;
+        const htmlPath = path.join(context.extensionPath, `src/shared/WebviewHTML/inputPreview_${language}.html`);
         previewPanel.webview.html = await fs.readFile(htmlPath, 'utf-8');
     }
 
     const inputBox = vscode.window.createInputBox();
-    inputBox.title = "Введите структуру";
-    inputBox.placeholder = "Пример: <folder1-name|file1:file2:file3>";
+    inputBox.title = await getLocalizationText("createStructure:inputStructureTitle");
+    inputBox.placeholder = "<folder1-name|file1:file2:file3>";
     inputBox.ignoreFocusOut = true;
 
     inputBox.onDidChangeValue(async text => {
-        inputBox.validationMessage = validateStructure(text);
+        inputBox.validationMessage = await validateStructure(text);
 
         if (!previewPanel) { return; }
         try {
@@ -442,7 +443,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
         inputBox.hide();
 
         if (!inputBox.value) {
-            showError('Необходимо ввести структуру');
+            showError(await getLocalizationText("errors:needInputStructure"));
             return;
         }
         
@@ -451,7 +452,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
             await createFromTree(path.join(rootPath, folderPath), tree, infoAboutComponent);
             await writeState(context, { componentInfo: infoAboutComponent, structureString: inputBox.value });
         } catch (err) {
-            showError('Ошибка парсинга:' + (err as Record<string, unknown>).message);
+            showError(await getLocalizationText("errors:parsingError"));
             return;
         }
 
@@ -469,7 +470,7 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
 export async function createStructure(context: vscode.ExtensionContext) {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
-        showError('Откройте папку проекта');
+        showError(await getLocalizationText("errors:needSelectDir"));
         return;
     }
     const rootPath = workspaceFolders[0].uri.fsPath;
@@ -479,7 +480,7 @@ export async function createStructure(context: vscode.ExtensionContext) {
 
     const createNewFolder = async () => {
         return await vscode.window.showInputBox({
-            prompt: 'Введите имя папки',
+            prompt: await getLocalizationText("createStructure:inputFolderName"),
         });
     };
 
@@ -495,7 +496,7 @@ export async function createStructure(context: vscode.ExtensionContext) {
             selectedFolder = await vscode.window.showQuickPick(
                 [CREATE_NEW_FOLDER, ...folders],
                 {
-                    placeHolder: 'Выберите папку, в которой необходимо создать компоненту',
+                    placeHolder: await getLocalizationText("createStructure:selectFolder"),
                     canPickMany: false,
                     ignoreFocusOut: true
                 }
@@ -506,14 +507,14 @@ export async function createStructure(context: vscode.ExtensionContext) {
             select = false;
             selectedFolder = await createNewFolder();
             if (!selectedFolder) {
-                showError('Необходимо указать имя папки');
+                showError(await getLocalizationText("errors:needDirName"));
                 return;
             }
             folderPath = path.join(folderPath, selectedFolder as string);
         }
         else {
             if (!selectedFolder) {
-                showError('Необходимо выбрать папку');
+                showError(await getLocalizationText("errors:needSelectDir"));
                 return;
             }
             folderPath = path.join(folderPath, selectedFolder as string);

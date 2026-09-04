@@ -16,7 +16,8 @@
             "$commands/*": [ "./src/commands/*" ],
             "$templates/*": [ "./src/templates/*" ],
             "$shared/*": [ "./src/shared/*" ],
-        }
+        },
+        "resolveJsonModule": true
     },
     "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js"],
 }

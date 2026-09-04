@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { showError } from "../shared/utils";
+import { getLocalizationText, showError } from "../shared/utils";
 import { UserSnippets } from '../shared/types';
 
 export async function editUserSnippets(context: vscode.ExtensionContext) {
     const panel = vscode.window.createWebviewPanel(
         'ccreatorsnippets',
-        'CCreator - Редактировать сниппеты',
+        await getLocalizationText("snippets:webViewTitle"),
         vscode.ViewColumn.One,
         { enableScripts: true }
     );
@@ -13,7 +13,7 @@ export async function editUserSnippets(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('ccreator');
     const currentTemplates = config.get<UserSnippets[]>('snippets', []);
 
-    panel.webview.html = getWebviewContent(currentTemplates);
+    panel.webview.html = await getWebviewContent(currentTemplates);
 
     panel.webview.onDidReceiveMessage(
         async (message) => {
@@ -24,9 +24,9 @@ export async function editUserSnippets(context: vscode.ExtensionContext) {
                         message.data, 
                         vscode.ConfigurationTarget.Global
                     );
-                    vscode.window.showInformationMessage('Сниппеты CCreator успешно сохранены!');
+                    vscode.window.showInformationMessage(await getLocalizationText("snippets:successSave"));
                 } catch (err) {
-                    showError(`Ошибка сохранения: ${(err as Record<string, unknown>).message}`);
+                    showError(`${await getLocalizationText("errors:saveError")}: ${(err as Record<string, unknown>).message}`);
                 }
             }
         },
@@ -35,7 +35,7 @@ export async function editUserSnippets(context: vscode.ExtensionContext) {
     );
 }
 
-function getWebviewContent(snippets: UserSnippets[]) {
+async function getWebviewContent(snippets: UserSnippets[]) {
     const snippetsJson = JSON.stringify(snippets).replace(/</g, '\\u003c');
 
     return `
@@ -68,16 +68,15 @@ function getWebviewContent(snippets: UserSnippets[]) {
     </style>
 </head>
 <body>
-    <h2>Управление сниппетами CCreator</h2>
+    <h2>${await getLocalizationText("snippets:webViewHeader")} CCreator</h2>
     <p class="description">
-        Создайте переменные, которые можно использовать при генерации структуры папок и файлов. <br/>
-        Пример использования в шаблоне: <span class="code-tip">&lt;ui|Component_{CURRENT_YEAR}&gt;</span>
+        ${await getLocalizationText("snippets:webViewDescription")} <span class="code-tip">&lt;ui|Component_{CURRENT_YEAR}&gt;</span>
     </p>
 
     <div id="snippets-container" class="snippets-box"></div>
-    <button id="addSnippetBtn">+ Добавить новый сниппет</button>
+    <button id="addSnippetBtn">+ ${await getLocalizationText("snippets:webViewAddSnippet")}</button>
 
-    <button class="btn-save" id="saveBtn">Сохранить сниппеты в настройки VS Code</button>
+    <button class="btn-save" id="saveBtn">${await getLocalizationText("snippets:webViewSaveSnippets")}</button>
 
     <script>
         const vscode = acquireVsCodeApi();
@@ -88,7 +87,7 @@ function getWebviewContent(snippets: UserSnippets[]) {
             container.innerHTML = '';
 
             if (userSnippets.length === 0) {
-                container.innerHTML = '<div class="empty-message">Список сниппетов пуст. Нажмите кнопку ниже, чтобы добавить первый сниппет.</div>';
+                container.innerHTML = '<div class="empty-message">${await getLocalizationText("snippets:webViewEmptyList")}</div>';
                 return;
             }
 
@@ -98,15 +97,15 @@ function getWebviewContent(snippets: UserSnippets[]) {
 
                 row.innerHTML = \`
                     <div class="field-group field-name">
-                        <label>Имя переменной:</label>
+                        <label>${await getLocalizationText("snippets:webViewVariableName")}:</label>
                         <input type="text" placeholder="CURRENT_YEAR" value="\${snip.snippetName || ''}" onchange="updateSnippet(\${idx}, 'snippetName', this.value)">
                     </div>
                     <div class="field-group field-value">
-                        <label>JS Код функции (value):</label>
+                        <label>${await getLocalizationText("snippets:webViewJSCode")}:</label>
                         <input type="text" class="code-font" placeholder="() => new Date().getFullYear()" value="\${snip.value || ''}" onchange="updateSnippet(\${idx}, 'value', this.value)">
                     </div>
                     <div class="field-action">
-                        <button class="btn-delete" onclick="deleteSnippet(\${idx})" title="Удалить сниппет">✕</button>
+                        <button class="btn-delete" onclick="deleteSnippet(\${idx})" title="${await getLocalizationText("snippets:webViewDeleteSnippet")}">✕</button>
                     </div>
                 \`;
                 container.appendChild(row);

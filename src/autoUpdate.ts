@@ -18,11 +18,11 @@ export async function checkForUpdates(context: vscode.ExtensionContext) {
         const latestVersion = (release.tag_name as string)?.replace('v', '') || '0.0.0';
         if (latestVersion !== currentVersion) {
             const action = await vscode.window.showInformationMessage(
-                `Доступна новая версия ${latestVersion}. Установить?`,
-                'Обновить', 'Позже'
+                `A new version is available: ${latestVersion}. Install?`,
+                'Update', 'Later'
             );
             
-            if (action === 'Обновить') {
+            if (action === 'Update') {
                 const assets = release.assets as Array<Record<string, unknown>>;
                 const asset = assets?.find((a: any) => (a.name as string)?.endsWith('.vsix'));
                 
@@ -33,41 +33,41 @@ export async function checkForUpdates(context: vscode.ExtensionContext) {
                     
                     await vscode.window.withProgress({
                         location: vscode.ProgressLocation.Notification,
-                        title: "Обновление CCreator",
+                        title: "Update CCreator",
                         cancellable: false
                     }, async (progress) => {
-                        progress.report({ message: "Скачивание новой версии..." });
+                        progress.report({ message: "Download new version..." });
                         await downloadFile(downloadUrl, vsixPath);
                         
-                        progress.report({ message: "Установка расширения..." });
+                        progress.report({ message: "Install extension..." });
                         const vsixUri = vscode.Uri.file(vsixPath);
                         
                         await vscode.commands.executeCommand('workbench.extensions.installExtension', vsixUri);
                     });
 
                     const reloadAction = await vscode.window.showInformationMessage(
-                        'Расширение успешно обновлено. Перезагрузить окно для применения изменений?',
-                        'Перезагрузить'
+                        'The extension has been successfully updated. Reload the window to apply the changes?',
+                        'Reload'
                     );
                     
-                    if (reloadAction === 'Перезагрузить') {
+                    if (reloadAction === 'Reload') {
                         await vscode.commands.executeCommand('workbench.action.reloadWindow');
                     }
                 } else {
-                    vscode.window.showErrorMessage('В релизе не найден .vsix файл.');
+                    vscode.window.showErrorMessage('The .vsix file was not found in the release.');
                 }
             }
         }
 
         } catch (err) {
-            console.error('Ошибка проверки обновлений:', err);
-            vscode.window.showErrorMessage(`Ошибка проверки обновлений: ${(err as Record<string, unknown>).message}`);
+            console.error('Update check error:', err);
+            vscode.window.showErrorMessage(`Update check error: ${(err as Record<string, unknown>).message}`);
         } finally {
             if (vsixPath) {
             try {
                 await fs.rm(vsixPath, { force: true });
             } catch (error) {
-                console.error('Не удалось удалить временный VSIX файл:', error);
+                console.error('The temporary VSIX file could not be deleted:', error);
             }
         }
     }

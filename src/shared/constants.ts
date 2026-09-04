@@ -1,8 +1,10 @@
+import { getLocalizationText } from "./utils";
+
 export const contextKey = 'CCreator_history_';
 
 export const jsonConfigFile = 'ccreator.config.json';
-export const INIT_CONFIG_FILE = 'Создать конфиг-файл';
-export const WRITE_CONFIG_FILE = 'Перезаписать текущие конфиг-файл согласно параметрам';
+export const INIT_CONFIG_FILE = async () => await getLocalizationText('configFile:init');
+export const WRITE_CONFIG_FILE = async () => await getLocalizationText('configFile:write');
 export const baseConfigData = {
     "historyLength": 5,
     "showLivePreview": true,

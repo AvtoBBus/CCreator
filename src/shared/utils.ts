@@ -14,7 +14,7 @@ export function getHistoryString(infoAboutComponent: ComponentInfoType): string 
     return `${resultBase}${infoAboutComponent.script} + ${infoAboutComponent.style})`;
 };
 
-export async function getConfigurationParam(paramKey: ConfigurationParamKey): Promise<number | boolean | UserTemplate[] | UserSnippets[] | undefined> {
+export async function getConfigurationParam(paramKey: ConfigurationParamKey): Promise<number | boolean | string | UserTemplate[] | UserSnippets[] | undefined> {
     const configuration = vscode.workspace.getConfiguration('ccreator');
     const tryGetFromConfig = await getValueFromConfig(paramKey);
     const paramValue = tryGetFromConfig !== undefined ? tryGetFromConfig : configuration.get(paramKey);
@@ -24,6 +24,7 @@ export async function getConfigurationParam(paramKey: ConfigurationParamKey): Pr
     if (paramKey === 'snippets') { return (paramValue ?? []) as UserSnippets[]; };
     if (paramKey === 'showLivePreview') { return (paramValue ?? false) as boolean; };
     if (paramKey === 'useLinter') { return (paramValue ?? false) as boolean; };
+    if (paramKey === 'language') { return (paramValue ?? "eng") as string; };
     return undefined;
 };
 
@@ -31,21 +32,28 @@ export function showError(text: string) {
     vscode.window.showErrorMessage(text);
 };
 
-export function validateStructure(text: string): string | undefined {
+export async function validateStructure(text: string): Promise<string | undefined> {
     if (!text.trim()) {
         return undefined;
     }
 
     // 1. Проверка правильного порядка и баланса угловых скобок < >
     let angleBalance = 0;
+    let prevChar = '';
     for (const char of text) {
-        if (char === '<') { angleBalance++; }
-        if (char === '>') { angleBalance--; }
-        if (angleBalance < 0) {
-            return '👉 Ошибка: закрывающая ">" идет раньше открывающей "<"';
+        if (char === '<') {
+            angleBalance++;
+        } else if (char === '>') {
+            angleBalance--;
+            if (angleBalance < 0) {
+                return await getLocalizationText("validation:angleBalanceBelow");
+            }
         }
+        prevChar = char;
     }
-    if (angleBalance > 0) { return '👉 Ожидается закрывающая скобка ">"'; }
+    if (angleBalance > 0) {
+        return await getLocalizationText("validation:angleBalanceAbove");
+    }
 
     // 2. Проверка правильного порядка и баланса квадратных скобок [ ]
     let squareBalance = 0;
@@ -53,10 +61,10 @@ export function validateStructure(text: string): string | undefined {
         if (char === '[') { squareBalance++; }
         if (char === ']') { squareBalance--; }
         if (squareBalance < 0) {
-            return '👉 Ошибка: закрывающая "]" идет раньше открывающей "["';
+            return await getLocalizationText("validation:squareBalanceBelow");
         }
     }
-    if (squareBalance > 0) { return '👉 Ожидается закрывающая скобка "]" для перечисления'; }
+    if (squareBalance > 0) { return await getLocalizationText("validation:squareBalanceAbove"); }
 
     // 3. Проверка правильного порядка и баланса фигурных скобок { }
     let curlyBalance = 0;
@@ -64,68 +72,67 @@ export function validateStructure(text: string): string | undefined {
         if (char === '{') { curlyBalance++; }
         if (char === '}') { curlyBalance--; }
         if (curlyBalance < 0) {
-            return '👉 Ошибка: закрывающая "}" идет раньше открывающей "{"';
+            return await getLocalizationText("validation:curlyBalanceBelow");
         }
     }
-    if (curlyBalance > 0) { return '👉 Ожидается закрывающая скобка "}" для переменной'; }
+    if (curlyBalance > 0) { return await getLocalizationText("validation:curlyBalanceAbove"); }
 
     // 4. Проверки на пустые скобки и некорректное содержимое
     if (text.includes('[]')) {
-        return '👉 Перечисление [...] не может быть пустым';
+        return await getLocalizationText("validation:emptyArray");
     }
     if (text.includes('{}')) {
-        return '👉 Имя переменной {...} не может быть пустым';
+        return await getLocalizationText("validation:emptySnippet");
     }
-    if (text.includes(', Helen,')) { // Общая проверка на двойную запятую
-        return '👉 Обнаружена двойная запятая ",,". Удалите лишнюю';
-    }
-    if (text.includes(',,')) {
-        return '👉 Обнаружена двойная запятая ",,". Удалите лишнюю';
+    if (text.includes(',,')) { // Общая проверка на двойную запятую
+        return await getLocalizationText("validation:doubleComma");
     }
     if (text.includes(',]')) {
-        return '👉 Лишняя запятая перед закрывающей квадратной скобкой "]"';
+        return await getLocalizationText("validation:commaBeforeSquare");
     }
     if (text.includes('[,')) {
-        return '👉 Лишняя запятая после открывающей квадратной скобки "["';
+        return await getLocalizationText("validation:commaAfterSquare");
     }
 
     // 5. Проверка синтаксиса перечислений: [file1,file2].ext
     const squareCloseIndex = text.indexOf(']');
     if (squareCloseIndex !== -1 && squareCloseIndex < text.length - 1) {
         if (text[squareCloseIndex + 1] !== '.') {
-            return '👉 После закрывающей квадратной скобки "]" должно идти расширение файла (например: .ts)';
+            return await getLocalizationText("validation:extentionAfterSquare");
         }
     }
     
     // Запятая разрешена ТОЛЬКО внутри квадратных скобок
     const hasCommaOutsideSquare = text.replace(/\[[^\]]*\]/g, '').includes(',');
     if (hasCommaOutsideSquare) {
-        return '👉 Запятая "," разрешена только внутри квадратных скобок [file1,file2]';
+        return await getLocalizationText("validation:commaOutsideSquare");
     }
 
     // Проверка на пересечение скобок (например, [index_{YEAR, utils].ts)
     if (/\{[^}]*\]/.test(text)) {
-        return '👉 Нарушена вложенность: фигурная скобка "{" должна закрыться внутри перечисления';
+        return await getLocalizationText("validation:enclosureError");
     }
 
     // 6. Базовые проверки стыков и окончаний строки
-    if (text.startsWith(':') || text.startsWith('|')) {
-        return '👉 Строка не может начинаться с символов ":" или "|"';
+    const symbolsCheckStartEnd = [':', '|', '.', ','];
+    if (text && symbolsCheckStartEnd.some((s) => { return text.startsWith(s); })) {
+        return (await getLocalizationText("validation:wrongStart")) + symbolsCheckStartEnd.join(', ');
     }
-    if (text.endsWith(':') || text.endsWith('|') || text.endsWith(',')) {
-        return '👉 Строка не может заканчиваться на символ ":", "|" или ","';
+    if (text && symbolsCheckStartEnd.some((s) => { return text.endsWith(s); })) {
+        return (await getLocalizationText("validation:wrongEnd")) + symbolsCheckStartEnd.join(', ');
     }
+
     if (text.includes('::')) {
-        return '👉 Обнаружено двойное двоеточие "::". Удалите лишнее';
+        return await getLocalizationText("validation:squareDots");
     }
     if (text.includes('||')) {
-        return '👉 Обнаружен двойной разделитель "||". Удалите лишнее';
+        return await getLocalizationText("validation:doubleVertical");
     }
 
     // 7. Запрещенные системные символы для имен файлов (ИГНОРИРУЯ содержимое сниппетов)
     const textWithoutSnippets = text.replace(/\{[^}]*\}/g, ''); 
     if (/[\\"*?]/g.test(textWithoutSnippets)) {
-        return '👉 Имя файла или папки содержит запрещенные символы (например: \\, ", *, ?)';
+        return await getLocalizationText("validation:wrongName");
     }
 
     return undefined; 
@@ -142,6 +149,27 @@ export async function formatGeneratedFile(filePath: string) {
         await vscode.commands.executeCommand('editor.action.formatDocument');
         await document.save();
     } catch (error) {
-        showError(`Ошибка Prettier для файла ${filePath}: ${error}`);
+        showError(`${getLocalizationText('errors:linterError')} ${filePath}: ${error}`);
     }
 };
+
+export async function getLocalizationText(path: string): Promise<string> {
+    const selectedLanguage = await getConfigurationParam('language') as string;
+    const localizationJson = require(`./localization/${selectedLanguage}.json`);
+
+    const getValueByPath = (path: string, obj: Record<string, any>): string | undefined => {
+        const keys = path.split(':');
+        
+        let current: any = obj;
+        for (const key of keys) {
+            if (current && typeof current === 'object' && key in current) {
+                current = current[key];
+            } else {
+                return undefined;
+            }
+        }
+        return current;
+    };
+
+    return getValueByPath(path, localizationJson) ?? "";
+}

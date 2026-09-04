@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { showError } from '$shared/utils';
+import { getLocalizationText, showError } from '$shared/utils';
 import { baseConfigData, INIT_CONFIG_FILE, jsonConfigFile, WRITE_CONFIG_FILE } from '$shared/constants';
 import { getConfigurationParam } from '$shared/utils';
 import { ConfigurationParamKey } from '$shared/types';
@@ -51,7 +51,7 @@ export async function getValueFromConfig(paramKey: ConfigurationParamKey): Promi
 export async function workWithConfigFile() {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
-        showError('Необходимо открыть директорию для работы');
+        showError(await getLocalizationText("errors:needSelectDir"));
         return;
     }
 
@@ -59,16 +59,18 @@ export async function workWithConfigFile() {
     const configUri = vscode.Uri.joinPath(rootUri, jsonConfigFile);
     const isConfigExist = fs.existsSync(configUri.path.slice(1));
 
-    const quickPickCommand = [INIT_CONFIG_FILE];
+    const quickPickCommand = [
+        await INIT_CONFIG_FILE()
+    ];
 
     if (isConfigExist) {
-        quickPickCommand.push(WRITE_CONFIG_FILE);
+        quickPickCommand.push(await WRITE_CONFIG_FILE());
     }
 
     const pickedCommand = await vscode.window.showQuickPick(
         quickPickCommand,
         {
-            placeHolder: 'Выберите, что сделать с конфигом',
+            placeHolder: await getLocalizationText("configFile:pickCommand"),
             canPickMany: false,
             ignoreFocusOut: true
         }
@@ -79,18 +81,18 @@ export async function workWithConfigFile() {
     }
 
     switch (pickedCommand) {
-        case INIT_CONFIG_FILE:
+        case await INIT_CONFIG_FILE():
             initConfig(configUri);
             return;
-        case WRITE_CONFIG_FILE:
+        case await WRITE_CONFIG_FILE():
             if (!isConfigExist) {
-                showError(`Сначало необходимо создать файл с конфигом`);
+                showError(await getLocalizationText("configFile:needCreateConfig"));
                 return;
             }
             writeConfig(configUri);
             return;
         default:
-            showError(`Команда ${pickedCommand} не поддерживается`);
+            showError(`${pickedCommand} - ${await getLocalizationText("configFile:commandNotSuppot")}`);
             return;
     }
 };

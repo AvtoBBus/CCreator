@@ -2,7 +2,7 @@
   "name": "ccreator",
   "displayName": "CCreator",
   "description": "Extension for generating file and directory structures",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.125.0"

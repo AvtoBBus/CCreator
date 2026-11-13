@@ -2,7 +2,7 @@
 
 **A file and directory structure generator based on text descriptions** for Visual Studio Code.
 
-![version](https://img.shields.io/badge/version-1.2.0-blue)
+![version](https://img.shields.io/badge/version-1.2.1-blue)
 
 ---
 

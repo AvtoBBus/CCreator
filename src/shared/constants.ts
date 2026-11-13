@@ -9,6 +9,7 @@ export const baseConfigData = {
     "historyLength": 5,
     "showLivePreview": true,
     "useLinter": true,
+    "language": "eng",
     "snippets": [],
     "userTemplates": [
         {

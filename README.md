@@ -152,5 +152,3 @@ vsce package
 ---
 
 **Enjoy lightning-fast structure generation!** 🚀
-
-

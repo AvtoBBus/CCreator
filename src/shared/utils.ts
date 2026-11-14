@@ -2,6 +2,10 @@ import * as vscode from 'vscode';
 import type { ComponentInfoType, UserTemplate, UserSnippets, ConfigurationParamKey } from "./types";
 import { getValueFromConfig } from '$commands/CreateOrLoadConfiig';
 
+const supportedLanguages: string[] = ['eng', 'rus'];
+const defaultLanguage = 'eng';
+
+
 export function upperFirstLetter(str: string): string {
     return str[0].toUpperCase() + str.slice(1);
 };
@@ -149,13 +153,15 @@ export async function formatGeneratedFile(filePath: string) {
         await vscode.commands.executeCommand('editor.action.formatDocument');
         await document.save();
     } catch (error) {
-        showError(`${getLocalizationText('errors:linterError')} ${filePath}: ${error}`);
+        showError(`${await getLocalizationText('errors:linterError')} ${filePath}: ${error}`);
     }
 };
 
 export async function getLocalizationText(path: string): Promise<string> {
-    const selectedLanguage = await getConfigurationParam('language') as string;
-    const localizationJson = require(`./localization/${selectedLanguage}.json`);
+    const selectedLanguage = await getConfigurationParam('language') as string | undefined;
+    // require собирается esbuild в статический glob, поэтому неизвестное значение уронило бы расширение
+    const language = supportedLanguages.includes(selectedLanguage ?? '') ? selectedLanguage as string : defaultLanguage;
+    const localizationJson = require(`./localization/${language}.json`);
 
     const getValueByPath = (path: string, obj: Record<string, any>): string | undefined => {
         const keys = path.split(':');

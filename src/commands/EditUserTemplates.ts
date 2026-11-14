@@ -134,7 +134,7 @@ async function getWebviewContent(templates: UserTemplate[]) {
             };
 
             window.deleteTemplate = (tplIdx) => {
-                const presetName = templates[tplIdx].templateName || ${await getLocalizationText("templates:webViewPresetNoname")};
+                const presetName = templates[tplIdx].templateName || '${await getLocalizationText("templates:webViewPresetNoname")}';
                 templates.splice(tplIdx, 1);
                 
                 render();

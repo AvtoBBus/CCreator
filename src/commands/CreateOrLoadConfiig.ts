@@ -5,6 +5,9 @@ import { baseConfigData, INIT_CONFIG_FILE, jsonConfigFile, WRITE_CONFIG_FILE } f
 import { getConfigurationParam } from '$shared/utils';
 import { ConfigurationParamKey } from '$shared/types';
 
+// show-once flag: разорвать flood error-тостов при битом конфиг-файле
+let configErrorShown = false;
+
 async function writeFile(configData: Record<string, unknown>, configUri: vscode.Uri) {
     const configString = JSON.stringify(configData, null, 4);
     const uint8Array = Buffer.from(configString, 'utf8');
@@ -17,35 +20,55 @@ async function initConfig(configUri: vscode.Uri) {
 };
 
 async function writeConfig(configUri: vscode.Uri) {
-    const newConfig = {};
-    [
+    const configuration = vscode.workspace.getConfiguration('ccreator');
+    const newConfig: Record<string, unknown> = {};
+    const keys: ConfigurationParamKey[] = [
         "historyLength",
         "showLivePreview",
         "useLinter",
+        "language",
         "snippets",
         "userTemplates"
-    ].forEach(async key => {
-        Object.assign(newConfig, { [`${key}`]: await getConfigurationParam(key as ConfigurationParamKey) });
-    });
+    ];
+
+    // forEach с async-колбэком не дожидается промисов, поэтому используется for...of.
+    // Читаем настройки VS Code напрямую, а не через getConfigurationParam: тот приоритетно
+    // возвращает значения из этого же конфиг-файла, и команда перезаписывала бы файл им самим
+    for (const key of keys) {
+        Object.assign(newConfig, { [key]: configuration.get(key) });
+    }
 
     await writeFile(newConfig, configUri);
 };
 
-export async function getValueFromConfig(paramKey: ConfigurationParamKey): Promise<ReturnType<typeof getConfigurationParam>> {
+export async function getValueFromConfig(paramKey: ConfigurationParamKey): Promise<Awaited<ReturnType<typeof getConfigurationParam>>> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) { return undefined; }
     
     const rootUri = workspaceFolders[0].uri;
     const configUri = vscode.Uri.joinPath(rootUri, jsonConfigFile);
-    const isConfigExist = fs.existsSync(configUri.path.slice(1));
 
-    if (!isConfigExist) { return undefined; }
+    try {
+        const uint8Array = await vscode.workspace.fs.readFile(configUri);
+        // readFile возвращает Uint8Array: Uint8Array.toString() даёт список байт через запятую,
+        // поэтому декодировать нужно сами байты
+        const configString = Buffer.from(uint8Array).toString('utf-8');
+        const configData: Record<string, unknown> = JSON.parse(configString);
+        configErrorShown = false;
 
-    const uint8Array = await vscode.workspace.fs.readFile(configUri);
-    const configString = Buffer.from(uint8Array.toString(), 'utf-8').toString();
-    const configData: Record<string, ReturnType<typeof getConfigurationParam>> = JSON.parse(configString);
+        return configData[paramKey] as Awaited<ReturnType<typeof getConfigurationParam>>;
+    } catch (error) {
+        // Отсутствующий конфиг — штатная ситуация, значения берутся из настроек VS Code
+        if ((error as vscode.FileSystemError).code === 'FileNotFound') { return undefined; }
 
-    return configData[paramKey];
+        // English fallback без getLocalizationText, чтобы разорвать рекурсию:
+        // getLocalizationText → getConfigurationParam('language') → getValueFromConfig → ошибка → getLocalizationText → …
+        if (!configErrorShown) {
+            configErrorShown = true;
+            showError(`CCreator: failed to read config file: ${configUri.fsPath}`);
+        }
+        return undefined;
+    }
 };
 
 export async function workWithConfigFile() {
@@ -57,14 +80,19 @@ export async function workWithConfigFile() {
 
     const rootUri = workspaceFolders[0].uri;
     const configUri = vscode.Uri.joinPath(rootUri, jsonConfigFile);
-    const isConfigExist = fs.existsSync(configUri.path.slice(1));
+    const isConfigExist = fs.existsSync(configUri.fsPath);
+
+    // Метки кэшируются: повторные await в case-выражениях перевызывают локализацию и лишний раз
+    // читают конфиг-файл
+    const initLabel = await INIT_CONFIG_FILE();
+    const writeLabel = await WRITE_CONFIG_FILE();
 
     const quickPickCommand = [
-        await INIT_CONFIG_FILE()
+        initLabel
     ];
 
     if (isConfigExist) {
-        quickPickCommand.push(await WRITE_CONFIG_FILE());
+        quickPickCommand.push(writeLabel);
     }
 
     const pickedCommand = await vscode.window.showQuickPick(
@@ -81,15 +109,15 @@ export async function workWithConfigFile() {
     }
 
     switch (pickedCommand) {
-        case await INIT_CONFIG_FILE():
-            initConfig(configUri);
+        case initLabel:
+            await initConfig(configUri);
             return;
-        case await WRITE_CONFIG_FILE():
+        case writeLabel:
             if (!isConfigExist) {
                 showError(await getLocalizationText("configFile:needCreateConfig"));
                 return;
             }
-            writeConfig(configUri);
+            await writeConfig(configUri);
             return;
         default:
             showError(`${pickedCommand} - ${await getLocalizationText("configFile:commandNotSuppot")}`);

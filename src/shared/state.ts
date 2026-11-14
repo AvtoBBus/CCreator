@@ -9,7 +9,7 @@ export async function writeState(context: vscode.ExtensionContext, newItem: Cont
     if (prevState.length > historyLengthFromParams) {
         prevState = prevState.slice(0, historyLengthFromParams - 1);
     }
-    context.globalState.update(contextKey, [newItem, ...prevState]);
+    await context.globalState.update(contextKey, [newItem, ...prevState]);
 }
 
 export function readState(context: vscode.ExtensionContext): ContextItem[] {

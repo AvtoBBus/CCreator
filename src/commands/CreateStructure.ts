@@ -408,17 +408,33 @@ export async function afterSelectFolder(context: vscode.ExtensionContext, rootPa
             break;
     }
 
-    let previewPanel = null;
+    let previewPanel: vscode.WebviewPanel | undefined;
     if (await getConfigurationParam('showLivePreview')) {
-        previewPanel = vscode.window.createWebviewPanel(
-            'livePreview',
-            await getLocalizationText("createStructure:livePreviewTitle"),
-            vscode.ViewColumn.Two,
-            { enableScripts: true }
-        );
         const language = await getConfigurationParam('language') as string;
-        const htmlPath = path.join(context.extensionPath, `src/shared/WebviewHTML/inputPreview_${language}.html`);
-        previewPanel.webview.html = await fs.readFile(htmlPath, 'utf-8');
+        let html = '';
+
+        // Файл превью локализован: читаем его до создания панели, чтобы отсутствующий файл
+        // не обрывал команду, и падаем на дефолтную локализацию.
+        // media/ не исключается из пакета, поэтому путь доступен в установленной версии
+        for (const previewLanguage of [...new Set([language, 'eng'])]) {
+            try {
+                const htmlPath = path.join(context.extensionPath, 'media', `inputPreview_${previewLanguage}.html`);
+                html = await fs.readFile(htmlPath, 'utf-8');
+                break;
+            } catch (error) { }
+        }
+
+        if (html) {
+            previewPanel = vscode.window.createWebviewPanel(
+                'livePreview',
+                await getLocalizationText("createStructure:livePreviewTitle"),
+                vscode.ViewColumn.Two,
+                { enableScripts: true }
+            );
+            // При закрытии панели пользователем обнуляем ссылку, чтобы не слать postMessage в disposed webview
+            previewPanel.onDidDispose(() => { previewPanel = undefined; }, null, context.subscriptions);
+            previewPanel.webview.html = html;
+        }
     }
 
     const inputBox = vscode.window.createInputBox();

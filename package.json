@@ -172,6 +172,8 @@
   },
   "overrides": {
     "diff": "^8.0.4",
-    "serialize-javascript": "^7.0.6"
+    "serialize-javascript": "^7.0.6",
+    "minimatch": "^11.0.0",
+    "glob": "^14.0.1"
   }
 }

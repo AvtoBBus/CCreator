@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { readState, writeState } from '../shared/state';
-import { ComponentInfoType, ContextItem, FileNode, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserSnippets, UserTemplate } from '../shared/types';
+import { ComponentInfoType, ContextItem, FolderNode, Frameworks, Node, ReactComponentType, Scripts, Styles, Template, UserSnippets, UserTemplate } from '../shared/types';
 import { templates } from '../templates';
 import { formatGeneratedFile, getConfigurationParam, getHistoryString, getLocalizationText, showError, validateStructure } from '../shared/utils';
+import { parseStructureCore, applySnippets } from '../core';
 
 const CREATE_NEW_FOLDER = "=== CREATE NEW FOLDER ===";
 const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
@@ -16,136 +17,9 @@ const CREATE_NEW_TEMPLATE = "=== CREATE NEW TEMPLATE ===";
  * @throws Error при синтаксической ошибке.
  */
 export async function parseStructure(input: string): Promise<Node[]> {
-    let str = input.trim();
-    if (str === '') { return []; }
-
     const snippets = await getConfigurationParam('snippets') as UserSnippets[];
-
-    if (snippets.length) {
-        const results: Record<string, string | number | boolean> = {};
-        snippets.forEach(snippet => {
-            if (str.includes(`{${snippet.snippetName}}`)) {
-                try {
-                    results[snippet.snippetName] = eval(snippet.value)();
-                } catch (error) { }
-            };
-        });
-
-        Object.keys(results).forEach(key => {
-            str = str.replaceAll(`{${key}}`, results[key].toString());
-        });
-    }
-
-    let i = 0;
-
-    /**
-     * Парсит последовательность элементов на текущем уровне вложенности.
-     * @param stopChar - символ, при встрече которого парсинг останавливается (для внутренностей папки это '>').
-     * @returns массив узлов.
-     */
-    function parseElements(stopChar?: string): Node[] {
-        const result: Node[] = [];
-
-        while (i < str.length && str[i] !== stopChar) {
-            if (str[i] === '<') {
-                i++;
-
-                let name = '';
-                while (i < str.length && str[i] !== '|') {
-                    name += str[i];
-                    i++;
-                }
-                if (i >= str.length || str[i] !== '|') {
-                    throw new Error();
-                }
-                i++;
-
-                const children = parseElements('>');
-                if (i >= str.length || str[i] !== '>') {
-                    throw new Error();
-                }
-                i++;
-
-                result.push({
-                    type: 'folder',
-                    name: name.trim(),
-                    children,
-                } as FolderNode);
-            } 
-            else if (str[i] === '[') {
-                i++;
-
-                let files: FileNode[] = [];
-                while (str[i] !== ']') {
-                    let name = '';
-                    
-                    while (i < str.length && str[i] !== ',' && str[i] !== ']') {
-                        name += str[i];
-                        i++;
-                    }
-
-                    if (str[i] !== ']') {
-                        i++;
-                    }
-                    
-                    const checkNoTemplate = name.startsWith('!');
-                    files.push({
-                        type: 'file',
-                        name: checkNoTemplate ? name.trim().slice(1) : name.trim(),
-                        noTemplate: checkNoTemplate
-                    } as FileNode);
-                }
-
-                i++;
-
-                let ext = '';
-                while (i < str.length && str[i] !== ':' && str[i] !== stopChar) {
-                    ext += str[i];
-                    i++;
-                }
-
-                files.forEach(file => {
-                    result.push({
-                        type: 'file',
-                        noTemplate: file.noTemplate,
-                        name: file.name + ext.trim()
-                    });
-                });
-
-            }
-            else {
-                let name = '';
-                while (i < str.length && str[i] !== ':' && str[i] !== stopChar) {
-                    name += str[i];
-                    i++;
-                }
-                if (name.trim() === '') {
-                    throw new Error();
-                }
-                const checkNoTemplate = name.startsWith('!');
-                result.push({
-                    type: 'file',
-                    name: checkNoTemplate ? name.trim().slice(1) : name.trim(),
-                    noTemplate: checkNoTemplate
-                } as FileNode);
-            }
-
-            if (i < str.length && str[i] === ':' && str[i] !== stopChar) {
-                i++;
-            } else if (i < str.length && str[i] === stopChar) {
-                break;
-            }
-        }
-
-        return result;
-    }
-
-    // Запускаем парсинг верхнего уровня
-    const result = parseElements(undefined);
-    if (i !== str.length) {
-        throw new Error();
-    }
-    return result;
+    const withSnippets = snippets.length ? applySnippets(input, snippets) : input;
+    return parseStructureCore(withSnippets);
 }
 
 async function getSubdirectories(dirPath: string): Promise<string[]> {

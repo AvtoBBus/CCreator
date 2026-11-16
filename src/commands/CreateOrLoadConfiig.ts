@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { getLocalizationText, showError } from '$shared/utils';
-import { baseConfigData, INIT_CONFIG_FILE, jsonConfigFile, WRITE_CONFIG_FILE } from '$shared/constants';
-import { getConfigurationParam } from '$shared/utils';
-import { ConfigurationParamKey } from '$shared/types';
+import { getLocalizationText, showError } from '../shared/utils';
+import { baseConfigData, INIT_CONFIG_FILE, jsonConfigFile, WRITE_CONFIG_FILE } from '../shared/constants';
+import { getConfigurationParam } from '../shared/utils';
+import { ConfigurationParamKey } from '../shared/types';
 
 // show-once flag: разорвать flood error-тостов при битом конфиг-файле
 let configErrorShown = false;
